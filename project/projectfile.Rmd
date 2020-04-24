@@ -1,0 +1,71 @@
+---
+title: "STAT510_Project"
+author: "Nicholas Roy"
+date: "4/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r, echo=FALSE} 
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar")
+new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
+
+##Working Directory
+setwd("C:/Users/Nicho/Documents/GitHub/covidanalysis/project")
+
+```
+
+
+```{r}
+#raw datasets
+data_cases = read.csv(file = "csvs/confirmed-covid-19-cases-in-us-by-state-and-county.csv")
+data_deaths = read.csv(file = "csvs/confirmed-covid-19-deaths-in-us-by-state-and-county.csv")
+data_health = read.csv(file = "csvs/us-county-health-rankings-2020.csv")
+data_mobility = read.csv(file = "csvs/us-mobility.csv")
+
+head(data_cases)
+```
+
+
+```{r}
+
+cases = as.data.frame(data_cases)
+cases$datedate = as.Date(cases$date)
+cases$datenumber = as.numeric(cases$datedate)
+casessorted = cases[order(cases$datenumber),]
+casessorted = casessorted[order(casessorted$county_fips),]
+casesfinal = subset(casessorted, datenumber > 18349 & county_fips > 1)
+
+datmat = casesfinal[,-(4:5),drop=FALSE]
+datmat = datmat[,-(5:7),drop=FALSE]
+
+deaths = as.data.frame(data_deaths)
+deaths$datedate = as.Date(deaths$date)
+deaths$datenumber = as.numeric(deaths$datedate)
+deathssorted = deaths[order(deaths$datenumber),]
+deathssorted = deathssorted[order(deathssorted$county_fips),]
+deathsfinal = subset(deathssorted, datenumber > 18349 & county_fips > 1)
+
+help(cbind)
+datmatfinal = cbind(datmat, deathsfinal$deaths)
+
+```
+
+```{r}
+# Test section
+
+date = "0311"
+realstringdate = paste("2020", substr(date, 1,2), substr(date,3,4), sep = "-")
+length(data_cases$county_fips)
+realdate = as.Date(realstringdate)
+realdate
+
+as.Date(data_cases$date[5300])
+```
