@@ -37,7 +37,7 @@ casesanddeaths = merge(data_cases, data_deaths)
 ```{r}
 
 data_mobility$county_name = data_mobility$region
-C-D-mobility = merge(casesanddeaths, data_mobility)
+CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE)
 
 ```
 
