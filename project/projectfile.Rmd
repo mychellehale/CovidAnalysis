@@ -118,7 +118,7 @@ for (daydata in datasubsets){
   
 index = index + 1
 
-  
+
 }
 
 ```
@@ -127,20 +127,12 @@ index = index + 1
 
 ## Full Linear Models for Deaths and Cases
 
-cov19_project = subset(allmerged,select= c("casesmonth","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","retail_recreation","grocery_pharmacy","parks","transit_stations","workplaces","residential"))
+cov19_project = subset(allmerged,select=c("casesmonth","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","retail_recreation","grocery_pharmacy","parks","transit_stations","workplaces","residential", "average_traffic_volume_per_meter_of_major_roadways"))
+
+cov19_project_nm = subset(allmerged,select=c("casesmonth","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
 
 ```
 
-```{r}
-basiclm.cases = lm(casesmonth ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential + percent_low_birthweight + percent_smokers + primary_care_physicians_rate + percent_vaccinated + percent_some_college + num_households + average_daily_pm2_5 + life_expectancy + child_mortality_rate + infant_mortality_rate + percent_food_insecure + median_household_income + 
-average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_and_over + percent_rural + percent_uninsured, data = allmerged)
-
-
-basiclm.deaths = lm(deathmonth ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential + percent_low_birthweight + percent_smokers + primary_care_physicians_rate + percent_vaccinated + percent_some_college + num_households + average_daily_pm2_5 + life_expectancy + child_mortality_rate + infant_mortality_rate + percent_food_insecure + median_household_income + 
-average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_and_over + percent_rural + percent_uninsured, data = allmerged)
-
-
-```
 
 
 ## Checking Correlation between variables
@@ -160,31 +152,73 @@ ggpairs(cov19_project, columns = c(2, 15:18))
 ggpairs(cov19_project, columns = c(2, 19:25)) # mobility variables
 ```
 
+
+
 ```{r}
-y.cases = cov19_project$casesmonth 
-y.deaths = cov19_project$deathmonth
-x1 = cov19_project$percent_smokers
-x2 = cov19_project$primary_care_physicians_rate
-x3 = cov19_project$percent_vaccinated
-x4 = cov19_project$num_households
-x5 = cov19_project$average_daily_pm2_5
-x6 = cov19_project$life_expectancy
-x7 = cov19_project$percent_food_insecure
-x8 = cov19_project$median_household_income
-x9 = cov19_project$population_2
-x10 = cov19_project$percent_65_and_over
-x11 = cov19_project$percent_rural
-x12 = cov19_project$percent_uninsured
-x13 = cov19_project$retail_recreation
-x14 = cov19_project$grocery_pharmacy
-x15 = cov19_project$parks
-x16 = cov19_project$transit_stations
-x17 = cov19_project$workplaces
-x18 = cov19_project$residential
+library(car)
+
+boxcoxtestreg = lm(data = na.omit(cov19_project_nm), casesmonth ~ life_expectancy + percent_vaccinated + percent_rural )
+bc = boxCox(boxcoxtestreg)
+
+lambda.opt = bc$x[which.max(bc$y)]
+lambda.opt
+
+#Confirms that log transform is the best for cases
+
+cov19_project_nm$logcasesmonth = log(cov19_project_nm$casesmonth)
+
+```
+
+```{r}
+
+cov19_project_nm$householdspercapita = cov19_project_nm$num_households/cov19_project_nm$population_2
+cov19_project_nm$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
 
 
-mod0_cases = lm(y.cases ~ 1)
-mo.upper_cases = lm(y.cases ~ )
-step(casesmonth, scope = list(lower = mod0, upper = mod.upper))
+```
+
+
+```{r}
+
+mod0.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~ 1)
+mod0.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate +percent_vaccinated + householdspercapita +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure +median_household_income +percent_65_and_over +majorityruralfactor +percent_uninsured)
+step(mod0.lower_cases, scope = list(lower = mod0.lower_cases, upper = mod0.upper_cases))
+
+
+lm1 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
+shapiro.test(residuals(lm1))
+
+plot(y = residuals(lm1), x = fitted(lm1))
+plot(y = residuals(lm1), x = na.omit(cov19_project_nm)$percent_low_birthweight)
+#Concentrated on left, log transform var
+cov19_project_nm$log_percent_low_birthweight = log(cov19_project_nm$percent_low_birthweight)
+
+lm2 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
+shapiro.test(residuals(lm2))
+plot(y=residuals(lm2), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
+
+plot(y=residuals(lm2), x= )
+
+
+```
+
+```{r}
+
+mod1.initial = lm(data = na.omit(cov19_project_nm), logcasesmonth ~ median_household_income)
+plot(data = na.omit(cov19_project_nm), x = fitted(mod1.initial), y = residuals(mod1.initial))
+#Concentrated on left, possibly transform var
+cov19_project_nm$log_median_household_income = log(cov19_project_nm$median_household_income)
+
+mod1.test1 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~ log_median_household_income)
+plot(data = na.omit(cov19_project_nm), x = fitted(mod1.test1), y = residuals(mod1.test1))
+hist(data = na.omit(cov19_project_nm), residuals(mod1.test1)) #normally dist
+
+mod1.lower_cases = mod1.test1
+mod1.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate +percent_vaccinated + householdspercapita +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure + log_median_household_income +percent_65_and_over +majorityruralfactor +percent_uninsured)
+
+step(mod1.lower_cases, scope = list(lower = mod1.lower_cases, upper = mod1.upper_cases))
+
 
 ```
