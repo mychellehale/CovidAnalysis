@@ -184,6 +184,9 @@ mod0.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~ 1)
 mod0.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate +percent_vaccinated + householdspercapita +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure +median_household_income +percent_65_and_over +majorityruralfactor +percent_uninsured)
 step(mod0.lower_cases, scope = list(lower = mod0.lower_cases, upper = mod0.upper_cases))
 
+mod1.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
+step(mod0.lower_cases, scope = list(lower = mod0.lower_cases, upper = mod1.upper_cases))
 
 lm1 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
 
@@ -196,14 +199,59 @@ cov19_project_nm$log_percent_low_birthweight = log(cov19_project_nm$percent_low_
 
 lm2 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
 
-
-shapiro.test(residuals(lm2))
 plot(y=residuals(lm2), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
 
 lm3 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
 
 summary(lm2)
+summary(lm3) #R-Squared went up
+
+plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$percent_smokers) #looks like equal variance is satisfied
+plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$primary_care_physicians_rate) #Needs log transform
+
+
+cov19_project_nm$log_primary_care_physicians_rate = log(cov19_project_nm$primary_care_physicians_rate)
+
+lm4 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
 summary(lm3)
+summary(lm4) #R-Squared went up
+
+plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$log_primary_care_physicians_rate) #Mostly solves unequal var.
+plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$householdspercapita) #looks like equal variance is satisfied
+plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$average_daily_pm2_5) #looks like equal variance is satisfied
+plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$life_expectancy)
+plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$infant_mortality_rate) #some funnelling
+
+cov19_project_nm$log_infant_mortality_rate = log(cov19_project_nm$infant_mortality_rate)
+
+lm5 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
+plot(y=residuals(lm5), x= na.omit(cov19_project_nm)$log_infant_mortality_rate) #fixes unequal variance
+
+summary(lm4)
+summary(lm5) #r-squared goes down but unequal variance is handled
+
+plot(y=residuals(lm5), x= na.omit(cov19_project_nm)$median_household_income) #some funnelling
+
+cov19_project_nm$log_median_household_income = log(cov19_project_nm$median_household_income)
+
+lm6 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income +percent_65_and_over +majorityruralfactor)
+
+summary(lm5)
+summary(lm6) #r-squared goes up
+
+plot(y=residuals(lm6), x= na.omit(cov19_project_nm)$log_median_household_income) #unequal variance handled
+plot(y=residuals(lm6), x= na.omit(cov19_project_nm)$percent_65_and_over)
+
+cov19_project_nm$log_percent_65_and_over = log(cov19_project_nm$percent_65_and_over)
+
+lm7 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
+
+summary(lm6)
+summary(lm7)
+
+plot(y=residuals(lm7), x= na.omit(cov19_project_nm)$log_percent_65_and_over) #unequal variance handled
 
 
 ```
