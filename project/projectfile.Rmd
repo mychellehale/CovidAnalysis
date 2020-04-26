@@ -12,13 +12,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "regex")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
 
 ##Working Directory
-setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regression_analysis/project")
+setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regression_analysis/project/github/covidanalysis/project")
 
 ```
 
@@ -30,7 +30,7 @@ casesanddeaths = read.csv(file = "csvs/us-counties.csv")
 data_health = read.csv(file = "csvs/us-county-health-rankings-2020.csv")
 data_mobility = read.csv(file = "csvs/us-mobility.csv")
 
-data_mobility$county = data_mobility$region
+data_mobility$county = stringr::str_remove(data_mobility$region, " County")
 
 ```
 
@@ -39,27 +39,73 @@ data_mobility$county = data_mobility$region
 CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE, by = c("county", "state"))
 
 ```
+
 ```{r}
 # Data Subsets
 
-mobility_cov19.0329 = subset(CD_mobility, date.x = factor("2020-03-29"))
-#mobility_cov19.0330 = subset(CD_mobility, date.x = "2020-03-30")
-mobility_cov19.0424 = subset(CD_mobility, date.x = factor("2020-04-24"))
+mobility_cov19.0329 = CD_mobility[ which(CD_mobility$date.x=='2020-03-29'), ]
+mobility_cov19.0330 = CD_mobility[ which(CD_mobility$date.x=='2020-03-30'), ]
+mobility_cov19.0331 = CD_mobility[ which(CD_mobility$date.x=='2020-03-31'), ]
+mobility_cov19.0401 = CD_mobility[ which(CD_mobility$date.x=='2020-04-01'), ]
+mobility_cov19.0402 = CD_mobility[ which(CD_mobility$date.x=='2020-04-02'), ]
+mobility_cov19.0403 = CD_mobility[ which(CD_mobility$date.x=='2020-04-03'), ]
+mobility_cov19.0404 = CD_mobility[ which(CD_mobility$date.x=='2020-04-04'), ]
+mobility_cov19.0405 = CD_mobility[ which(CD_mobility$date.x=='2020-04-05'), ]
+mobility_cov19.0406 = CD_mobility[ which(CD_mobility$date.x=='2020-04-06'), ]
+mobility_cov19.0407 = CD_mobility[ which(CD_mobility$date.x=='2020-04-07'), ]
+mobility_cov19.0408 = CD_mobility[ which(CD_mobility$date.x=='2020-04-08'), ]
+mobility_cov19.0409 = CD_mobility[ which(CD_mobility$date.x=='2020-04-09'), ]
+mobility_cov19.0410 = CD_mobility[ which(CD_mobility$date.x=='2020-04-10'), ]
+mobility_cov19.0411 = CD_mobility[ which(CD_mobility$date.x=='2020-04-11'), ]
+mobility_cov19.0412 = CD_mobility[ which(CD_mobility$date.x=='2020-04-12'), ]
+mobility_cov19.0413 = CD_mobility[ which(CD_mobility$date.x=='2020-04-13'), ]
+mobility_cov19.0414 = CD_mobility[ which(CD_mobility$date.x=='2020-04-14'), ]
+mobility_cov19.0415 = CD_mobility[ which(CD_mobility$date.x=='2020-04-15'), ]
+mobility_cov19.0416 = CD_mobility[ which(CD_mobility$date.x=='2020-04-16'), ]
+mobility_cov19.0417 = CD_mobility[ which(CD_mobility$date.x=='2020-04-17'), ]
+mobility_cov19.0418 = CD_mobility[ which(CD_mobility$date.x=='2020-04-18'), ]
+mobility_cov19.0419 = CD_mobility[ which(CD_mobility$date.x=='2020-04-19'), ]
+mobility_cov19.0420 = CD_mobility[ which(CD_mobility$date.x=='2020-04-20'), ]
+mobility_cov19.0421 = CD_mobility[ which(CD_mobility$date.x=='2020-04-21'), ]
+mobility_cov19.0422 = CD_mobility[ which(CD_mobility$date.x=='2020-04-22'), ]
+mobility_cov19.0423 = CD_mobility[ which(CD_mobility$date.x=='2020-04-23'), ]
+mobility_cov19.0424 = CD_mobility[ which(CD_mobility$date.x=='2020-04-24'), ]
 
-summary(mobility_cov19.0329)
-summary(mobility_cov19.0424)
+
 ```
 
 
 
 ```{r}
 
-basiclm.0329 = lm(CD_mobility$deaths ~ CD_mobility$retail_recreation + CD_mobility$grocery_pharmacy + CD_mobility$parks + CD_mobility$transit_stations + CD_mobility$workplaces + CD_mobility$residential, data = mobility_cov19.0329)
+basiclm.0329 = lm(mobility_cov19.0329$cases ~ mobility_cov19.0329$retail_recreation + mobility_cov19.0329$grocery_pharmacy + mobility_cov19.0329$parks + mobility_cov19.0329$transit_stations + mobility_cov19.0329$workplaces + mobility_cov19.0329$residential, data = mobility_cov19.0329)
 
-summary(basiclm.0329)
+#summary(basiclm.0329)
 
-basiclm.0424 = lm(CD_mobility$deaths ~ CD_mobility$retail_recreation + CD_mobility$grocery_pharmacy + CD_mobility$parks + CD_mobility$transit_stations + CD_mobility$workplaces + CD_mobility$residential, data = mobility_cov19.0424)
+basiclm.0424 = lm(mobility_cov19.0424$cases ~ mobility_cov19.0424$retail_recreation + mobility_cov19.0424$grocery_pharmacy + mobility_cov19.0424$parks + mobility_cov19.0424$transit_stations + mobility_cov19.0424$workplaces + mobility_cov19.0424$residential, data = mobility_cov19.0424)
 
-summary(basiclm.0424)
+#summary(basiclm.0424)
+
+```
+
+```{r}
+
+datasubsets = list(mobility_cov19.0329,mobility_cov19.0330, mobility_cov19.0331, mobility_cov19.0401, mobility_cov19.0402, mobility_cov19.0403, mobility_cov19.0404, mobility_cov19.0405, mobility_cov19.0406, mobility_cov19.0407, mobility_cov19.0408, mobility_cov19.0409, mobility_cov19.0410, mobility_cov19.0411, mobility_cov19.0412, mobility_cov19.0413, mobility_cov19.0414, mobility_cov19.0415, mobility_cov19.0416, mobility_cov19.0417, mobility_cov19.0418, mobility_cov19.0419, mobility_cov19.0420, mobility_cov19.0421, mobility_cov19.0422, mobility_cov19.0423, mobility_cov19.0424)
+
+
+
+
+for (daydata in datasubsets){
+  lmtest_cases = lm(cases ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
+  lmtest_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
+  
+  summary(lmtest_cases)
+  anova(lmtest_cases)
+  summary(lmtest_deaths)
+  anova(lmtest_deaths)
+
+
+  
+}
 
 ```
