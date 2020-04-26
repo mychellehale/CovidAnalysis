@@ -38,40 +38,90 @@ data_mobility$county = stringr::str_remove(data_mobility$region, " County")
 
 CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE, by = c("county", "state"))
 CD_mobility$deathsovercases = (CD_mobility$deaths / CD_mobility$cases)
+allmerged = merge(x=CD_mobility, y = data_health, all.x = TRUE, by = "fips")
+head(allmerged)
 
+```
+
+```{r}
+
+CD_cov19.0324 = CD_mobility[ which(CD_mobility$date.x=='2020-03-24'), ]
+CD_cov19.0329 = CD_mobility[ which(CD_mobility$date.x=='2020-03-29'), ]
+CD_cov19.0330 = CD_mobility[ which(CD_mobility$date.x=='2020-03-30'), ]
+CD_cov19.0331 = CD_mobility[ which(CD_mobility$date.x=='2020-03-31'), ]
+CD_cov19.0401 = CD_mobility[ which(CD_mobility$date.x=='2020-04-01'), ]
+CD_cov19.0402 = CD_mobility[ which(CD_mobility$date.x=='2020-04-02'), ]
+CD_cov19.0403 = CD_mobility[ which(CD_mobility$date.x=='2020-04-03'), ]
+CD_cov19.0404 = CD_mobility[ which(CD_mobility$date.x=='2020-04-04'), ]
+CD_cov19.0405 = CD_mobility[ which(CD_mobility$date.x=='2020-04-05'), ]
+CD_cov19.0406 = CD_mobility[ which(CD_mobility$date.x=='2020-04-06'), ]
+CD_cov19.0407 = CD_mobility[ which(CD_mobility$date.x=='2020-04-07'), ]
+CD_cov19.0408 = CD_mobility[ which(CD_mobility$date.x=='2020-04-08'), ]
+CD_cov19.0409 = CD_mobility[ which(CD_mobility$date.x=='2020-04-09'), ]
+CD_cov19.0410 = CD_mobility[ which(CD_mobility$date.x=='2020-04-10'), ]
+CD_cov19.0411 = CD_mobility[ which(CD_mobility$date.x=='2020-04-11'), ]
+CD_cov19.0412 = CD_mobility[ which(CD_mobility$date.x=='2020-04-12'), ]
+CD_cov19.0413 = CD_mobility[ which(CD_mobility$date.x=='2020-04-13'), ]
+CD_cov19.0414 = CD_mobility[ which(CD_mobility$date.x=='2020-04-14'), ]
+CD_cov19.0415 = CD_mobility[ which(CD_mobility$date.x=='2020-04-15'), ]
+CD_cov19.0416 = CD_mobility[ which(CD_mobility$date.x=='2020-04-16'), ]
+CD_cov19.0417 = CD_mobility[ which(CD_mobility$date.x=='2020-04-17'), ]
+CD_cov19.0418 = CD_mobility[ which(CD_mobility$date.x=='2020-04-18'), ]
+CD_cov19.0419 = CD_mobility[ which(CD_mobility$date.x=='2020-04-19'), ]
+CD_cov19.0420 = CD_mobility[ which(CD_mobility$date.x=='2020-04-20'), ]
+CD_cov19.0421 = CD_mobility[ which(CD_mobility$date.x=='2020-04-21'), ]
+CD_cov19.0422 = CD_mobility[ which(CD_mobility$date.x=='2020-04-22'), ]
+CD_cov19.0423 = CD_mobility[ which(CD_mobility$date.x=='2020-04-23'), ]
+CD_cov19.0424 = CD_mobility[ which(CD_mobility$date.x=='2020-04-24'), ]
+
+cov19.month = merge(x = CD_cov19.0424, y = CD_cov19.0324, by = c("county", "state", "fips"))
+
+cov19.month$deathmonth = cov19.month$deaths.x - cov19.month$deaths.y
+cov19.month$casesmonth = cov19.month$cases.x - cov19.month$cases.y
+
+####
+cov19.month$
+#### Delete variables, keep mobility ones and change variable
+  
+allmerged = merge(x=cov19.month, y = data_health, all.x = TRUE, by = "fips")
+head(allmerged)
+  
 ```
 
 ```{r}
 # Data Subsets
 
-mobility_cov19.0329 = CD_mobility[ which(CD_mobility$date.x=='2020-03-29'), ]
-mobility_cov19.0330 = CD_mobility[ which(CD_mobility$date.x=='2020-03-30'), ]
-mobility_cov19.0331 = CD_mobility[ which(CD_mobility$date.x=='2020-03-31'), ]
-mobility_cov19.0401 = CD_mobility[ which(CD_mobility$date.x=='2020-04-01'), ]
-mobility_cov19.0402 = CD_mobility[ which(CD_mobility$date.x=='2020-04-02'), ]
-mobility_cov19.0403 = CD_mobility[ which(CD_mobility$date.x=='2020-04-03'), ]
-mobility_cov19.0404 = CD_mobility[ which(CD_mobility$date.x=='2020-04-04'), ]
-mobility_cov19.0405 = CD_mobility[ which(CD_mobility$date.x=='2020-04-05'), ]
-mobility_cov19.0406 = CD_mobility[ which(CD_mobility$date.x=='2020-04-06'), ]
-mobility_cov19.0407 = CD_mobility[ which(CD_mobility$date.x=='2020-04-07'), ]
-mobility_cov19.0408 = CD_mobility[ which(CD_mobility$date.x=='2020-04-08'), ]
-mobility_cov19.0409 = CD_mobility[ which(CD_mobility$date.x=='2020-04-09'), ]
-mobility_cov19.0410 = CD_mobility[ which(CD_mobility$date.x=='2020-04-10'), ]
-mobility_cov19.0411 = CD_mobility[ which(CD_mobility$date.x=='2020-04-11'), ]
-mobility_cov19.0412 = CD_mobility[ which(CD_mobility$date.x=='2020-04-12'), ]
-mobility_cov19.0413 = CD_mobility[ which(CD_mobility$date.x=='2020-04-13'), ]
-mobility_cov19.0414 = CD_mobility[ which(CD_mobility$date.x=='2020-04-14'), ]
-mobility_cov19.0415 = CD_mobility[ which(CD_mobility$date.x=='2020-04-15'), ]
-mobility_cov19.0416 = CD_mobility[ which(CD_mobility$date.x=='2020-04-16'), ]
-mobility_cov19.0417 = CD_mobility[ which(CD_mobility$date.x=='2020-04-17'), ]
-mobility_cov19.0418 = CD_mobility[ which(CD_mobility$date.x=='2020-04-18'), ]
-mobility_cov19.0419 = CD_mobility[ which(CD_mobility$date.x=='2020-04-19'), ]
-mobility_cov19.0420 = CD_mobility[ which(CD_mobility$date.x=='2020-04-20'), ]
-mobility_cov19.0421 = CD_mobility[ which(CD_mobility$date.x=='2020-04-21'), ]
-mobility_cov19.0422 = CD_mobility[ which(CD_mobility$date.x=='2020-04-22'), ]
-mobility_cov19.0423 = CD_mobility[ which(CD_mobility$date.x=='2020-04-23'), ]
-mobility_cov19.0424 = CD_mobility[ which(CD_mobility$date.x=='2020-04-24'), ]
+cov19.0324 = allmerged[ which(allmerged$date.x=='2020-03-24'), ]
+cov19.0329 = allmerged[ which(allmerged$date.x=='2020-03-29'), ]
+cov19.0330 = allmerged[ which(allmerged$date.x=='2020-03-30'), ]
+cov19.0331 = allmerged[ which(allmerged$date.x=='2020-03-31'), ]
+cov19.0401 = allmerged[ which(allmerged$date.x=='2020-04-01'), ]
+cov19.0402 = allmerged[ which(allmerged$date.x=='2020-04-02'), ]
+cov19.0403 = allmerged[ which(allmerged$date.x=='2020-04-03'), ]
+cov19.0404 = allmerged[ which(allmerged$date.x=='2020-04-04'), ]
+cov19.0405 = allmerged[ which(allmerged$date.x=='2020-04-05'), ]
+cov19.0406 = allmerged[ which(allmerged$date.x=='2020-04-06'), ]
+cov19.0407 = allmerged[ which(allmerged$date.x=='2020-04-07'), ]
+cov19.0408 = allmerged[ which(allmerged$date.x=='2020-04-08'), ]
+cov19.0409 = allmerged[ which(allmerged$date.x=='2020-04-09'), ]
+cov19.0410 = allmerged[ which(allmerged$date.x=='2020-04-10'), ]
+cov19.0411 = allmerged[ which(allmerged$date.x=='2020-04-11'), ]
+cov19.0412 = allmerged[ which(allmerged$date.x=='2020-04-12'), ]
+cov19.0413 = allmerged[ which(allmerged$date.x=='2020-04-13'), ]
+cov19.0414 = allmerged[ which(allmerged$date.x=='2020-04-14'), ]
+cov19.0415 = allmerged[ which(allmerged$date.x=='2020-04-15'), ]
+cov19.0416 = allmerged[ which(allmerged$date.x=='2020-04-16'), ]
+cov19.0417 = allmerged[ which(allmerged$date.x=='2020-04-17'), ]
+cov19.0418 = allmerged[ which(allmerged$date.x=='2020-04-18'), ]
+cov19.0419 = allmerged[ which(allmerged$date.x=='2020-04-19'), ]
+cov19.0420 = allmerged[ which(allmerged$date.x=='2020-04-20'), ]
+cov19.0421 = allmerged[ which(allmerged$date.x=='2020-04-21'), ]
+cov19.0422 = allmerged[ which(allmerged$date.x=='2020-04-22'), ]
+cov19.0423 = allmerged[ which(allmerged$date.x=='2020-04-23'), ]
+cov19.0424 = allmerged[ which(allmerged$date.x=='2020-04-24'), ]
 
+cov19.0424$deathmonth = cov19.0424$deaths - cov19.0324$deaths
+cov19.0424$casemonth = cov19.0424$cases - cov19.0324$casescov19
 
 ```
 
@@ -91,7 +141,7 @@ basiclm.0424 = lm(mobility_cov19.0424$cases ~ mobility_cov19.0424$retail_recreat
 
 ```{r}
 
-datasubsets = list(mobility_cov19.0329, mobility_cov19.0330, mobility_cov19.0331, mobility_cov19.0401, mobility_cov19.0402, mobility_cov19.0403, mobility_cov19.0404, mobility_cov19.0405, mobility_cov19.0406, mobility_cov19.0407, mobility_cov19.0408, mobility_cov19.0409, mobility_cov19.0410, mobility_cov19.0411, mobility_cov19.0412, mobility_cov19.0413, mobility_cov19.0414, mobility_cov19.0415, mobility_cov19.0416, mobility_cov19.0417, mobility_cov19.0418, mobility_cov19.0419, mobility_cov19.0420, mobility_cov19.0421, mobility_cov19.0422, mobility_cov19.0423, mobility_cov19.0424)
+datasubsets = list(cov19.0329, cov19.0330, cov19.0331, cov19.0401, cov19.0402, cov19.0403, cov19.0404, cov19.0405, cov19.0406, cov19.0407, cov19.0408, cov19.0409, cov19.0410, cov19.0411, cov19.0412, cov19.0413, cov19.0414, cov19.0415, cov19.0416, cov19.0417, cov19.0418, cov19.0419, cov19.0420, cov19.0421, cov19.0422, cov19.0423, cov19.0424)
 
 casesmodels = vector(mode = "list", length = 27)
 deathsmodels = vector(mode = "list", length = 27)
@@ -99,8 +149,10 @@ deathsmodels = vector(mode = "list", length = 27)
 index = 1
 
 for (daydata in datasubsets){
-  casesmodels[[index]] = lmtest_cases = lm(cases ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
-  deathsmodels[[index]] = lmtest_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
+  casesmodels[[index]] = lmtest_cases = lm(cases ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential + percent_low_birthweight + percent_smokers + primary_care_physicians_rate + percent_vaccinated + percent_some_college + num_households + average_daily_pm2_5 + life_expectancy + child_mortality_rate + infant_mortality_rate + percent_food_insecure + median_household_income + 
+average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_and_over + percent_rural + percent_uninsured, data = daydata)
+  deathsmodels[[index]] = lmtest_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential + percent_low_birthweight + percent_smokers + primary_care_physicians_rate + percent_vaccinated + percent_some_college + num_households + average_daily_pm2_5 + life_expectancy + child_mortality_rate + infant_mortality_rate + percent_food_insecure + median_household_income + 
+average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_and_over + percent_rural + percent_uninsured, data = daydata)
   
   summary(lmtest_cases)
   anova(lmtest_cases)
@@ -163,12 +215,6 @@ summary(deathsmodels[[27]])
 
 ```
 
-```{r}
-
-
-
-```
-
 
 ```{r}
 
@@ -178,5 +224,7 @@ lm_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_s
 
 summary(lm_cases)
 summary(lm_deaths)
+
+plot()
 
 ```
