@@ -196,10 +196,14 @@ cov19_project_nm$log_percent_low_birthweight = log(cov19_project_nm$percent_low_
 
 lm2 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
 
+
 shapiro.test(residuals(lm2))
 plot(y=residuals(lm2), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
 
-plot(y=residuals(lm2), x= )
+lm3 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
+summary(lm2)
+summary(lm3)
 
 
 ```
