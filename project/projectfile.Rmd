@@ -12,14 +12,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
+library(GGally)
+library(ggplot2)
+```
 
+```{r}
 ##Working Directory
-setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regression_analysis/project/github/covidanalysis/project")
+#setwd("C:\Users\mnhale\OneDrive - Urban Science\STATS\Spring 2020\STAT 510\covidanalysis\project")
 
+#setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regression_analysis/project/github/covidanalysis/project")
 ```
 
 
@@ -101,7 +106,7 @@ head(allmerged)
 
 #Used For Picking Better Dates
 
-datasubsets = list(cov19.0329, cov19.0330, cov19.0331, cov19.0401, cov19.0402, cov19.0403, cov19.0404, cov19.0405, cov19.0406, cov19.0407, cov19.0408, cov19.0409, cov19.0410, cov19.0411, cov19.0412, cov19.0413, cov19.0414, cov19.0415, cov19.0416, cov19.0417, cov19.0418, cov19.0419, cov19.0420, cov19.0421, cov19.0422, cov19.0423, cov19.0424)
+datasubsets = list(CD_cov19.0329, CD_cov19.0330, CD_cov19.0331, CD_cov19.0401, CD_cov19.0402, CD_cov19.0403, CD_cov19.0404, CD_cov19.0405, CD_cov19.0406, CD_cov19.0407, CD_cov19.0408, CD_cov19.0409, CD_cov19.0410, CD_cov19.0411, CD_cov19.0412, CD_cov19.0413, CD_cov19.0414, CD_cov19.0415, CD_cov19.0416, CD_cov19.0417, CD_cov19.0418, CD_cov19.0419, CD_cov19.0420, CD_cov19.0421, CD_cov19.0422, CD_cov19.0423, CD_cov19.0424)
 
 casesmodels = vector(mode = "list", length = 27)
 deathsmodels = vector(mode = "list", length = 27)
@@ -118,10 +123,14 @@ index = index + 1
 
 ```
 
-
-
 ```{r}
 
+## Full Linear Models for Deaths and Cases
+
+cov19_project = subset(allmerged,select= c("casesmonth","deathmonth","retail_recreation","grocery_pharmacy","parks","transit_stations","workplaces","residential","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","percent_some_college","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
+
+```
+```{r}
 basiclm.cases = lm(casesmonth ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential + percent_low_birthweight + percent_smokers + primary_care_physicians_rate + percent_vaccinated + percent_some_college + num_households + average_daily_pm2_5 + life_expectancy + child_mortality_rate + infant_mortality_rate + percent_food_insecure + median_household_income + 
 average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_and_over + percent_rural + percent_uninsured, data = allmerged)
 
@@ -133,11 +142,9 @@ average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_a
 ```
 
 
-
-
-
+## Checking Correlation between variables
 ```{r}
-
-plot()
-
+#based on the output here, we will probably need to log transform casesmonth
+ggpairs(cov19_project, columns = c(1, 3:9))
+ggpairs(cov19_project, columns = c(1, 10:14))
 ```
