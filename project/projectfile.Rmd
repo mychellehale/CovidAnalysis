@@ -37,6 +37,7 @@ data_mobility$county = stringr::str_remove(data_mobility$region, " County")
 ```{r}
 
 CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE, by = c("county", "state"))
+CD_mobility$deathsovercases = (CD_mobility$deaths / CD_mobility$cases)
 
 ```
 
@@ -90,22 +91,92 @@ basiclm.0424 = lm(mobility_cov19.0424$cases ~ mobility_cov19.0424$retail_recreat
 
 ```{r}
 
-datasubsets = list(mobility_cov19.0329,mobility_cov19.0330, mobility_cov19.0331, mobility_cov19.0401, mobility_cov19.0402, mobility_cov19.0403, mobility_cov19.0404, mobility_cov19.0405, mobility_cov19.0406, mobility_cov19.0407, mobility_cov19.0408, mobility_cov19.0409, mobility_cov19.0410, mobility_cov19.0411, mobility_cov19.0412, mobility_cov19.0413, mobility_cov19.0414, mobility_cov19.0415, mobility_cov19.0416, mobility_cov19.0417, mobility_cov19.0418, mobility_cov19.0419, mobility_cov19.0420, mobility_cov19.0421, mobility_cov19.0422, mobility_cov19.0423, mobility_cov19.0424)
+datasubsets = list(mobility_cov19.0329, mobility_cov19.0330, mobility_cov19.0331, mobility_cov19.0401, mobility_cov19.0402, mobility_cov19.0403, mobility_cov19.0404, mobility_cov19.0405, mobility_cov19.0406, mobility_cov19.0407, mobility_cov19.0408, mobility_cov19.0409, mobility_cov19.0410, mobility_cov19.0411, mobility_cov19.0412, mobility_cov19.0413, mobility_cov19.0414, mobility_cov19.0415, mobility_cov19.0416, mobility_cov19.0417, mobility_cov19.0418, mobility_cov19.0419, mobility_cov19.0420, mobility_cov19.0421, mobility_cov19.0422, mobility_cov19.0423, mobility_cov19.0424)
 
+casesmodels = vector(mode = "list", length = 27)
+deathsmodels = vector(mode = "list", length = 27)
 
-
+index = 1
 
 for (daydata in datasubsets){
-  lmtest_cases = lm(cases ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
-  lmtest_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
+  casesmodels[[index]] = lmtest_cases = lm(cases ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
+  deathsmodels[[index]] = lmtest_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = daydata)
   
   summary(lmtest_cases)
   anova(lmtest_cases)
   summary(lmtest_deaths)
   anova(lmtest_deaths)
-
+  
+index = index + 1
 
   
 }
+
+```
+
+```{r}
+
+#Finding best days
+
+# summary(casesmodels[[10]])
+# summary(casesmodels[[11]])
+# summary(casesmodels[[12]])
+# summary(casesmodels[[13]])
+# summary(casesmodels[[14]])
+# summary(casesmodels[[15]])
+# summary(casesmodels[[16]])
+# summary(casesmodels[[17]])
+# summary(casesmodels[[18]])
+# summary(casesmodels[[19]])
+# summary(casesmodels[[20]])
+# summary(casesmodels[[21]])
+# summary(casesmodels[[22]])
+# summary(casesmodels[[23]])
+# summary(casesmodels[[24]])
+# summary(casesmodels[[25]])
+# summary(casesmodels[[26]])
+# summary(casesmodels[[26]])
+summary(casesmodels[[27]])
+  #anova(casesmodels[[27]])
+
+# summary(deathsmodels[[10]])
+# summary(deathsmodels[[11]])
+# summary(deathsmodels[[12]])
+# summary(deathsmodels[[13]])
+# summary(deathsmodels[[14]])
+# summary(deathsmodels[[15]])
+# summary(deathsmodels[[16]])
+# summary(deathsmodels[[17]])
+# summary(deathsmodels[[18]])
+# summary(deathsmodels[[19]])
+# summary(deathsmodels[[20]])
+# summary(deathsmodels[[21]])
+  #anova(deathsmodels[[21]])
+# summary(deathsmodels[[22]])
+# summary(deathsmodels[[23]])
+# summary(deathsmodels[[24]])
+# summary(deathsmodels[[25]])
+# summary(deathsmodels[[26]])
+# summary(deathsmodels[[26]])
+summary(deathsmodels[[27]])
+  #anova(deathsmodels[[27]])
+
+```
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+lm_cases = lm(cases ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = mobility_cov19.0424)
+
+lm_deaths = lm(deaths ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential, data = mobility_cov19.0424)
+
+summary(lm_cases)
+summary(lm_deaths)
 
 ```
