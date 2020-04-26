@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "regex")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -25,48 +25,41 @@ setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regres
 
 ```{r}
 #raw datasets
-data_cases = read.csv(file = "csvs/confirmed-covid-19-cases-in-us-by-state-and-county.csv")
-data_deaths = read.csv(file = "csvs/confirmed-covid-19-deaths-in-us-by-state-and-county.csv")
+
+casesanddeaths = read.csv(file = "csvs/us-counties.csv")
 data_health = read.csv(file = "csvs/us-county-health-rankings-2020.csv")
 data_mobility = read.csv(file = "csvs/us-mobility.csv")
 
-casesanddeaths = merge(data_cases, data_deaths)
+data_mobility$county = data_mobility$region
 
 ```
 
 ```{r}
 
-data_mobility$county_name = data_mobility$region
-CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE)
+CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE, by = c("county", "state"))
 
 ```
+```{r}
+# Data Subsets
 
-# ```{r}
-# 
-# cases = as.data.frame(data_cases)
-# cases$datedate = as.Date(cases$date)
-# cases$datenumber = as.numeric(cases$datedate)
-# casessorted = cases[order(cases$datenumber),]
-# casessorted = casessorted[order(casessorted$county_fips),]
-# casesfinal = subset(casessorted, datenumber > 18349 & county_fips > 1)
-# 
-# datmat = casesfinal[,-(4:5),drop=FALSE]
-# datmat = datmat[,-(5:7),drop=FALSE]
-# 
-# deaths = as.data.frame(data_deaths)
-# deaths$datedate = as.Date(deaths$date)
-# deaths$datenumber = as.numeric(deaths$datedate)
-# deathssorted = deaths[order(deaths$datenumber),]
-# deathssorted = deathssorted[order(deathssorted$county_fips),]
-# deathsfinal = subset(deathssorted, datenumber > 18349 & county_fips > 1)
-# 
-# help(cbind)
-# datmatfinal = cbind(datmat, deathsfinal$deaths)
-# 
-# ```
+mobility_cov19.0329 = subset(CD_mobility, date.x = factor("2020-03-29"))
+#mobility_cov19.0330 = subset(CD_mobility, date.x = "2020-03-30")
+mobility_cov19.0424 = subset(CD_mobility, date.x = factor("2020-04-24"))
+
+summary(mobility_cov19.0329)
+summary(mobility_cov19.0424)
+```
+
+
 
 ```{r}
 
+basiclm.0329 = lm(CD_mobility$deaths ~ CD_mobility$retail_recreation + CD_mobility$grocery_pharmacy + CD_mobility$parks + CD_mobility$transit_stations + CD_mobility$workplaces + CD_mobility$residential, data = mobility_cov19.0329)
 
+summary(basiclm.0329)
+
+basiclm.0424 = lm(CD_mobility$deaths ~ CD_mobility$retail_recreation + CD_mobility$grocery_pharmacy + CD_mobility$parks + CD_mobility$transit_stations + CD_mobility$workplaces + CD_mobility$residential, data = mobility_cov19.0424)
+
+summary(basiclm.0424)
 
 ```
