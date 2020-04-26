@@ -145,6 +145,20 @@ average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_a
 ## Checking Correlation between variables
 ```{r}
 #based on the output here, we will probably need to log transform casesmonth
-ggpairs(cov19_project, columns = c(1, 3:9))
-ggpairs(cov19_project, columns = c(1, 10:14))
+ggpairs(cov19_project, columns = c(1, 3:8))
+ggpairs(cov19_project, columns = c(1, 9:14))
+ggpairs(cov19_project, columns = c(1, 15:20))
+ggpairs(cov19_project, columns = c(1, 21:25))
+```
+
+```{r}
+#based on the output here, we will probably need to log transform casesmonth
+ggpairs(cov19_project, columns = c(2, 3:8))
+ggpairs(cov19_project, columns = c(2, 9:14))
+ggpairs(cov19_project, columns = c(2, 15:20))
+ggpairs(cov19_project, columns = c(2, 21:25))
+```
+
+```{r}
+
 ```
