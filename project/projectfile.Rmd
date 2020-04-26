@@ -37,7 +37,6 @@ data_mobility$county = stringr::str_remove(data_mobility$region, " County")
 ```{r}
 
 CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE, by = c("county", "state"))
-CD_mobility$deathsovercases = (CD_mobility$deaths / CD_mobility$cases)
 allmerged = merge(x=CD_mobility, y = data_health, all.x = TRUE, by = "fips")
 head(allmerged)
 
@@ -74,16 +73,26 @@ CD_cov19.0422 = CD_mobility[ which(CD_mobility$date.x=='2020-04-22'), ]
 CD_cov19.0423 = CD_mobility[ which(CD_mobility$date.x=='2020-04-23'), ]
 CD_cov19.0424 = CD_mobility[ which(CD_mobility$date.x=='2020-04-24'), ]
 
-cov19.month = merge(x = CD_cov19.0424, y = CD_cov19.0324, by = c("county", "state", "fips"))
+cov19.month = merge(x = CD_cov19.0424, y = CD_cov19.0324, by = c("county", "state", "fips", "retail_recreation", "grocery_pharmacy", "parks", "transit_stations", "workplaces", "residential"))
 
 cov19.month$deathmonth = cov19.month$deaths.x - cov19.month$deaths.y
 cov19.month$casesmonth = cov19.month$cases.x - cov19.month$cases.y
 
 ####
-cov19.month$
+cov19.month$date.x.x = NULL
+cov19.month$cases.x = NULL
+cov19.month$deaths.x = NULL
+cov19.month$date.y.x = NULL
+cov19.month$region.x = NULL
+cov19.month$date.x.y = NULL
+cov19.month$cases.y = NULL
+cov19.month$deaths.y = NULL
+cov19.month$date.y.y = NULL
+cov19.month$region.y = NULL
+head(cov19.month)
 #### Delete variables, keep mobility ones and change variable
   
-allmerged = merge(x=cov19.month, y = data_health, all.x = TRUE, by = "fips")
+allmerged = merge(x=cov19.month, y = data_health, all.x = TRUE, by = c("fips", "county", "state"))
 head(allmerged)
   
 ```
