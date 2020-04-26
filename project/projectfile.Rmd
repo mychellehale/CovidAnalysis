@@ -127,9 +127,10 @@ index = index + 1
 
 ## Full Linear Models for Deaths and Cases
 
-cov19_project = subset(allmerged,select= c("casesmonth","deathmonth","retail_recreation","grocery_pharmacy","parks","transit_stations","workplaces","residential","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","percent_some_college","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
+cov19_project = subset(allmerged,select= c("casesmonth","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","retail_recreation","grocery_pharmacy","parks","transit_stations","workplaces","residential"))
 
 ```
+
 ```{r}
 basiclm.cases = lm(casesmonth ~ retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces + residential + percent_low_birthweight + percent_smokers + primary_care_physicians_rate + percent_vaccinated + percent_some_college + num_households + average_daily_pm2_5 + life_expectancy + child_mortality_rate + infant_mortality_rate + percent_food_insecure + median_household_income + 
 average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_and_over + percent_rural + percent_uninsured, data = allmerged)
@@ -147,18 +148,43 @@ average_traffic_volume_per_meter_of_major_roadways + population_2 + percent_65_a
 #based on the output here, we will probably need to log transform casesmonth
 ggpairs(cov19_project, columns = c(1, 3:8))
 ggpairs(cov19_project, columns = c(1, 9:14))
-ggpairs(cov19_project, columns = c(1, 15:20))
-ggpairs(cov19_project, columns = c(1, 21:25))
+ggpairs(cov19_project, columns = c(1, 15:18))
+ggpairs(cov19_project, columns = c(1, 19:25))
 ```
 
 ```{r}
 #based on the output here, we will probably need to log transform casesmonth
 ggpairs(cov19_project, columns = c(2, 3:8))
 ggpairs(cov19_project, columns = c(2, 9:14))
-ggpairs(cov19_project, columns = c(2, 15:20))
-ggpairs(cov19_project, columns = c(2, 21:25))
+ggpairs(cov19_project, columns = c(2, 15:18))
+ggpairs(cov19_project, columns = c(2, 19:25)) # mobility variables
 ```
 
 ```{r}
+y.cases = cov19_project$casesmonth 
+y.deaths = cov19_project$deathmonth
+x1 = cov19_project$percent_smokers
+x2 = cov19_project$primary_care_physicians_rate
+x3 = cov19_project$percent_vaccinated
+x4 = cov19_project$num_households
+x5 = cov19_project$average_daily_pm2_5
+x6 = cov19_project$life_expectancy
+x7 = cov19_project$percent_food_insecure
+x8 = cov19_project$median_household_income
+x9 = cov19_project$population_2
+x10 = cov19_project$percent_65_and_over
+x11 = cov19_project$percent_rural
+x12 = cov19_project$percent_uninsured
+x13 = cov19_project$retail_recreation
+x14 = cov19_project$grocery_pharmacy
+x15 = cov19_project$parks
+x16 = cov19_project$transit_stations
+x17 = cov19_project$workplaces
+x18 = cov19_project$residential
+
+
+mod0_cases = lm(y.cases ~ 1)
+mo.upper_cases = lm(y.cases ~ )
+step(casesmonth, scope = list(lower = mod0, upper = mod.upper))
 
 ```
