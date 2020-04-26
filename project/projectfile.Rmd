@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -172,6 +172,7 @@ cov19_project_nm$logcasesmonth = log(cov19_project_nm$casesmonth)
 ```{r}
 
 cov19_project_nm$householdspercapita = cov19_project_nm$num_households/cov19_project_nm$population_2
+cov19_project_nm$log_rural = log(cov19_project_nm$percent_rural)
 cov19_project_nm$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
 
 
@@ -197,13 +198,11 @@ plot(y = residuals(lm1), x = na.omit(cov19_project_nm)$percent_low_birthweight)
 #Concentrated on left, log transform var
 cov19_project_nm$log_percent_low_birthweight = log(cov19_project_nm$percent_low_birthweight)
 
-lm2 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
-
-plot(y=residuals(lm2), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
+plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
 
 lm3 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
 
-summary(lm2)
+summary(lm1)
 summary(lm3) #R-Squared went up
 
 plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$percent_smokers) #looks like equal variance is satisfied
@@ -253,6 +252,82 @@ summary(lm7)
 
 plot(y=residuals(lm7), x= na.omit(cov19_project_nm)$log_percent_65_and_over) #unequal variance handled
 
+shapiro.test(residuals(lm7))
+
+summary(lm7)
+
+ggpairs(data = na.omit(cov19_project_nm), columns = c("logcasesmonth", "log_percent_low_birthweight", "percent_smokers", "log_primary_care_physicians_rate", "householdspercapita", "average_daily_pm2_5", "life_expectancy", "log_median_household_income", "log_percent_65_and_over", "majorityruralfactor"))
+
+#Take out insignificant variable to satisfy normality assumption
+
+lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
+
+summary(lm8)
+shapiro.test(residuals(lm8))
+
+plot(lm8, which = 2)
+
+#normality issue
+
+```
+```{r}
+
+lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
+
+lm9 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~ r)
+
+
+
+
+step(lm8reduced, scope = list(lower = lm8reduced, upper = lm8))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(leaps)
+mod = regsubsets(cbind(na.omit(cov19_project_nm)$log_percent_low_birthweight, na.omit(cov19_project_nm)$percent_smokers, na.omit(cov19_project_nm)$log_primary_care_physicians_rate, na.omit(cov19_project_nm)$householdspercapita, na.omit(cov19_project_nm)$average_daily_pm2_5, na.omit(cov19_project_nm)$life_expectancy, na.omit(cov19_project_nm)$log_median_household_income, na.omit(cov19_project_nm)$log_percent_65_and_over, na.omit(cov19_project_nm)$majorityruralfactor), na.omit(cov19_project_nm)$logcasesmonth)
+
+
+#Confirming best model
+summary.mod = summary(mod)
+#"best" models
+summary.mod$which
+summary.mod$rsq
+
+#Take out variables that seem less relevant
 
 ```
 
