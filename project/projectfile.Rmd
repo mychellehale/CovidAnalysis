@@ -347,26 +347,6 @@ plot_usmap(regions = c("states"), data = cov19_project_nm,
 
 ```
 
-```{r}
-#mobility
-cov19_project$logcasesmonth = cov19_project_nm$logcasesmonth
-cov19_project$log_percent_low_birthweight = log(cov19_project$percent_low_birthweight)
-cov19_project$log_primary_care_physicians_rate = log(cov19_project$primary_care_physicians_rate)
-cov19_project$log_infant_mortality_rate = log(cov19_project$infant_mortality_rate)
-cov19_project$log_median_household_income = log(cov19_project$median_household_income)
-cov19_project$log_percent_65_and_over = log(cov19_project$percent_65_and_over)
-cov19_project$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
-
-
-lm8 = lm(data = na.omit(cov19_project), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor)
-
-lm8mobility = lm(data = na.omit(cov19_project), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor + retail_recreation + grocery_pharmacy +parks + transit_stations + workplaces + residential)
-
-
-anova(lm8, lm8mobility)
-
-summary(lm8mobility)
-```
 
 ```{r}
 #prediction interval for counties with 65+
@@ -410,6 +390,39 @@ title(main = "log(Med HH Income)*life_expectancy vs. log(cases month)",line = 0.
 ```
 
 
+```{r}
+#mobility
+cov19_project$logcasesmonth = cov19_project_nm$logcasesmonth
+cov19_project$log_percent_low_birthweight = log(cov19_project$percent_low_birthweight)
+cov19_project$log_primary_care_physicians_rate = log(cov19_project$primary_care_physicians_rate)
+cov19_project$log_infant_mortality_rate = log(cov19_project$infant_mortality_rate)
+cov19_project$log_median_household_income = log(cov19_project$median_household_income)
+cov19_project$log_percent_65_and_over = log(cov19_project$percent_65_and_over)
+cov19_project$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
+
+
+lm8 = lm(data = na.omit(cov19_project), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor)
+
+fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
+    log_primary_care_physicians_rate + average_daily_pm2_5 + 
+    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
+    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
+    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
+    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
+    data = na.omit(cov19_project_nm))
+
+fit2mobility = lm(data = na.omit(cov19_project), logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
+    log_primary_care_physicians_rate + average_daily_pm2_5 + 
+    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
+    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
+    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
+    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income + retail_recreation + grocery_pharmacy +parks + transit_stations + workplaces + residential)
+
+
+anova(lm8, fit2mobility)
+
+summary(fit2mobility)
+```
 
 ```{r}
 plot(y=residuals(fit2), x= x10) #fixes unequal variance
