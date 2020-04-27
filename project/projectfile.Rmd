@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps", "usmap", "maps", "plotly", "devtools")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -135,29 +135,38 @@ cov19_project_nm = subset(allmerged,select=c("fips","state","casesmonth","deathm
 
 
 
-## Checking Correlation between variables
+## Checking Correlation between variables and also linearity between independent variables and the dependent variable
 ```{r}
 #based on the output here, we will probably need to log transform casesmonth
-ggpairs(cov19_project, columns = c(1, 3:8))
-ggpairs(cov19_project, columns = c(1, 9:14))
-ggpairs(cov19_project, columns = c(1, 15:18))
-ggpairs(cov19_project, columns = c(1, 19:25))
+ggpairs(cov19_project_nm, columns = c(3, 5:12))
+ggpairs(cov19_project_nm, columns = c(3, 13:19))
+
+#head(cov19_project_nm)
 ```
 
 ```{r}
 #based on the output here, we will probably need to log transform casesmonth
-ggpairs(cov19_project, columns = c(2, 3:8))
-ggpairs(cov19_project, columns = c(2, 9:14))
-ggpairs(cov19_project, columns = c(2, 15:18))
-ggpairs(cov19_project, columns = c(2, 19:25)) # mobility variables
+ggpairs(cov19_project, columns = c(3, 5:12))
+ggpairs(cov19_project, columns = c(3, 13:19))
+ggpairs(cov19_project, columns = c(3, 20:27))
+head(cov19_project)
+ # mobility variables
 ```
 
 
+```{r}
+
+cov19_project_nm$householdspercapita = cov19_project_nm$num_households/cov19_project_nm$population_2
+cov19_project_nm$log_rural = log(cov19_project_nm$percent_rural)
+cov19_project_nm$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
+
+
+```
 
 ```{r}
 library(car)
 
-boxcoxtestreg = lm(data = na.omit(cov19_project_nm), casesmonth ~ life_expectancy + percent_vaccinated + percent_rural )
+boxcoxtestreg = lm(data = na.omit(cov19_project_nm), casesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor )
 bc = boxCox(boxcoxtestreg)
 
 lambda.opt = bc$x[which.max(bc$y)]
@@ -169,14 +178,7 @@ cov19_project_nm$logcasesmonth = log(cov19_project_nm$casesmonth)
 
 ```
 
-```{r}
 
-cov19_project_nm$householdspercapita = cov19_project_nm$num_households/cov19_project_nm$population_2
-cov19_project_nm$log_rural = log(cov19_project_nm$percent_rural)
-cov19_project_nm$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
-
-
-```
 
 
 ```{r}
@@ -198,9 +200,11 @@ plot(y = residuals(lm1), x = na.omit(cov19_project_nm)$percent_low_birthweight)
 #Concentrated on left, log transform var
 cov19_project_nm$log_percent_low_birthweight = log(cov19_project_nm$percent_low_birthweight)
 
+lm3 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+
+
 plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
 
-lm3 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
 
 summary(lm1)
 summary(lm3) #R-Squared went up
@@ -261,9 +265,16 @@ ggpairs(data = na.omit(cov19_project_nm), columns = c("logcasesmonth", "log_perc
 
 lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
 
-summary(lm8)
 shapiro.test(residuals(lm8))
 
+```
+```{r}
+#interaction terms
+mod1.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
+
+mod1.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor+log_percent_low_birthweight*majorityruralfactor + percent_smokers*majorityruralfactor +log_primary_care_physicians_rate*majorityruralfactor +average_daily_pm2_5*majorityruralfactor +life_expectancy*majorityruralfactor +log_infant_mortality_rate*majorityruralfactor +log_median_household_income*majorityruralfactor + log_percent_65_and_over*majorityruralfactor)
+
+step(mod1.lower_cases, scope = list(lower = mod1.lower_cases, upper = mod1.upper_cases))
 
 ```
 
@@ -301,6 +312,33 @@ hist(residuals(lm9))
 ```
 
 ```{r}
+library(usmap)
+ggplot(data = cov19_project_nm, aes(log_percent_65_and_over, logcasesmonth, col = factor(state)))+
+  geom_point()+
+  labs(title = "Scatterplot Log(% over 65) vs. Log(Cases Month)",
+  x = "Log(% over 65)",
+  y= "Log(Cases Month)")
+
+
+SWTWCdata = read_excel("alldata.xlsx")
+head(SWTWCdata)
+
+states = cov19_project_nm$STATE
+state = fips(states, to = "Abbreviation")
+
+varformap = SWTWCdata$`PUBLIC ROAD MILES PER 1,000 PEOPLE`
+
+SWTWCdataframe = data.frame(varformap, state)
+#SWTWCdataframe
+plot_usmap(regions = c("states"), data = cov19_project_nm,
+           values = "state", color = "black", labels = FALSE,
+           label_color = "black") + scale_fill_continuous(low = "light blue", high = "blue", na.value = "light gray", name ="", label = scales::comma) +
+  theme(legend.key.width = unit(2, "line"), legend.key.height = unit(3, "line"), legend.position = "right", legend.title = element_text(size=16))
+
+
+```
+
+```{r}
 #mobility
 cov19_project$logcasesmonth = cov19_project_nm$logcasesmonth
 cov19_project$log_percent_low_birthweight = log(cov19_project$percent_low_birthweight)
@@ -322,6 +360,19 @@ summary(lm8mobility)
 ```
 
 ```{r}
+#prediction interval for counties with 65+
+
+fit1 = lm(logcasesmonth ~ log_percent_65_and_over, data = na.omit(cov19_project_nm))
+fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor + log_median_household_income*majorityruralfactor, data = na.omit(cov19_project_nm))
+summary(fit1)
+summary(fit2)
+
+#looks like relatively equal variance on the right side
+x10 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$majorityruralfactor
+
+plot(y=residuals(fit2), x= x10) #fixes unequal variance
+
+
 
 
 
