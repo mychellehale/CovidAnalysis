@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps", "usmap", "maps", "plotly", "devtools")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps", "usmap", "maps", "plotly", "devtools", "stargazer")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -401,7 +401,7 @@ cov19_project$log_percent_65_and_over = log(cov19_project$percent_65_and_over)
 cov19_project$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
 
 
-lm8 = lm(data = na.omit(cov19_project), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor)
+lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor)
 
 fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
     log_primary_care_physicians_rate + average_daily_pm2_5 + 
@@ -411,6 +411,14 @@ fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers +
     percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
     data = na.omit(cov19_project_nm))
 
+fit2_alt = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
+    log_primary_care_physicians_rate + average_daily_pm2_5 + 
+    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
+    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
+    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
+    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
+    data = na.omit(cov19_project))
+
 fit2mobility = lm(data = na.omit(cov19_project), logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
     log_primary_care_physicians_rate + average_daily_pm2_5 + 
     life_expectancy + log_infant_mortality_rate + log_median_household_income + 
@@ -418,10 +426,20 @@ fit2mobility = lm(data = na.omit(cov19_project), logcasesmonth ~ log_percent_low
     log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
     percent_smokers:log_median_household_income + life_expectancy:log_median_household_income + retail_recreation + grocery_pharmacy +parks + transit_stations + workplaces + residential)
 
+shapiro.test(residuals(fit2))
+shapiro.test(residuals(fit2mobility))
 
-anova(lm8, fit2mobility)
+plot(fit2, which = 2)
+hist(residuals(fit2), main = "Histogram of Model Residuals", xlab = "Standardized Residuals")
 
+anova(fit2_alt, fit2mobility)
+summary(lm8)
+summary(fit2)
 summary(fit2mobility)
+library(stargazer)
+help(stargazer)
+table = stargazer(lm8, fit2, fit2mobility, title = "Results", align = TRUE, type ="html")
+
 ```
 
 ```{r}
@@ -431,5 +449,6 @@ p.i. = predict(fit2, interval = 'confidence', level = .95)
 confint(fit2, "log_percent_65_and_over",level = .95)
 summary(fit2)
 
+mean(cov19_project$deathmonth)
 ```
 
