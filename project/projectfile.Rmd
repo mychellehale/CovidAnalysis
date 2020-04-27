@@ -331,8 +331,8 @@ varformap = SWTWCdata$`PUBLIC ROAD MILES PER 1,000 PEOPLE`
 SWTWCdataframe = data.frame(varformap, state)
 #SWTWCdataframe
 plot_usmap(regions = c("states"), data = cov19_project_nm,
-           values = "state", color = "black", labels = FALSE,
-           label_color = "black") + scale_fill_continuous(low = "light blue", high = "blue", na.value = "light gray", name ="", label = scales::comma) +
+           values = "casesmonth", color = "light gray", labels = FALSE,
+           label_color = "black") + scale_fill_continuous(low = "pink", high = "red", na.value = " gray", name ="", label = scales::comma) +
   theme(legend.key.width = unit(2, "line"), legend.key.height = unit(3, "line"), legend.position = "right", legend.title = element_text(size=16))
 
 
