@@ -270,11 +270,20 @@ shapiro.test(residuals(lm8))
 ```
 ```{r}
 #interaction terms
+
+#majority rural and other factors
 mod1.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
 
 mod1.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor+log_percent_low_birthweight*majorityruralfactor + percent_smokers*majorityruralfactor +log_primary_care_physicians_rate*majorityruralfactor +average_daily_pm2_5*majorityruralfactor +life_expectancy*majorityruralfactor +log_infant_mortality_rate*majorityruralfactor +log_median_household_income*majorityruralfactor + log_percent_65_and_over*majorityruralfactor)
 
 step(mod1.lower_cases, scope = list(lower = mod1.lower_cases, upper = mod1.upper_cases))
+
+# median HH income and other factors
+mod2.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
+
+mod2.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor+log_percent_low_birthweight*log_median_household_income + percent_smokers*log_median_household_income +log_primary_care_physicians_rate*log_median_household_income +average_daily_pm2_5*log_median_household_income +life_expectancy*log_median_household_income +log_infant_mortality_rate*log_median_household_income + log_percent_65_and_over*log_median_household_income)
+
+step(mod2.lower_cases, scope = list(lower = mod2.lower_cases, upper = mod2.upper_cases))
 
 ```
 
@@ -361,20 +370,53 @@ summary(lm8mobility)
 
 ```{r}
 #prediction interval for counties with 65+
-
-fit1 = lm(logcasesmonth ~ log_percent_65_and_over, data = na.omit(cov19_project_nm))
-fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor + log_median_household_income*majorityruralfactor, data = na.omit(cov19_project_nm))
+fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
+    log_primary_care_physicians_rate + average_daily_pm2_5 + 
+    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
+    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
+    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
+    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
+    data = na.omit(cov19_project_nm))
 summary(fit1)
 summary(fit2)
 
 #looks like relatively equal variance on the right side
 x10 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$majorityruralfactor
+plot(x = x10, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
+title(xlab = "log(Med HH Income)*majority rural", line = 2, cex.lab = .7)
+title(ylab = "log(cases month)", line=2, cex.lab = .7)
+title(main = "log(Med HH Income)*majority rural vs. log(cases month)",line = 0.5, cex.lab = .5 )
 
+
+x11 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$log_percent_low_birthweight
+plot(x = x11, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
+title(xlab = "log(Med HH Income)*log(% low birth weight)", line = 2, cex.lab = .7)
+title(ylab = "log(cases month)", line=2, cex.lab = .7)
+title(main = "log(Med HH Income)*log(% low birth weight) vs. log(cases month)",line = 0.5, cex.lab = .5 )
+
+
+x12 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$percent_smokers
+plot(x = x12, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
+title(xlab = "log(Med HH Income)*percent smokers", line = 2, cex.lab = .7)
+title(ylab = "log(cases month)", line=2, cex.lab = .7)
+title(main = "log(Med HH Income)*percent_smokers vs. log(cases month)",line = 0.5, cex.lab = .5 )
+
+x13 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$life_expectancy
+plot(x = x13, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
+title(xlab = "log(Med HH Income)*life_expectancy", line = 2, cex.lab = .7)
+title(ylab = "log(cases month)", line=2, cex.lab = .7)
+title(main = "log(Med HH Income)*life_expectancy vs. log(cases month)",line = 0.5, cex.lab = .5 )
+
+```
+
+
+
+```{r}
 plot(y=residuals(fit2), x= x10) #fixes unequal variance
 
-
-
-
+p.i. = predict(fit2, interval = 'confidence', level = .95)
+confint(fit2, "log_percent_65_and_over",level = .95)
+summary(fit2)
 
 ```
 
