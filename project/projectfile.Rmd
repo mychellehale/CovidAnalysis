@@ -328,17 +328,9 @@ ggplot(data = cov19_project_nm, aes(log_percent_65_and_over, logcasesmonth, col 
   x = "Log(% over 65)",
   y= "Log(Cases Month)")
 
-
-SWTWCdata = read_excel("alldata.xlsx")
-head(SWTWCdata)
-
 states = cov19_project_nm$STATE
-state = fips(states, to = "Abbreviation")
 
-varformap = SWTWCdata$`PUBLIC ROAD MILES PER 1,000 PEOPLE`
 
-SWTWCdataframe = data.frame(varformap, state)
-#SWTWCdataframe
 plot_usmap(regions = c("states"), data = cov19_project_nm,
            values = "casesmonth", color = "light gray", labels = FALSE,
            label_color = "black") + scale_fill_continuous(low = "pink", high = "red", na.value = " gray", name ="", label = scales::comma) +
