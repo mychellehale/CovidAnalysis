@@ -336,7 +336,7 @@ plot_usmap(regions = c("states"), data = cov19_project_nm,
            label_color = "black") + scale_fill_continuous(low = "pink", high = "red", na.value = " gray", name ="", label = scales::comma) +
   theme(legend.key.width = unit(2, "line"), legend.key.height = unit(3, "line"), legend.position = "right", legend.title = element_text(size=16))
 
-
+help(plot_usmap)
 ```
 
 
