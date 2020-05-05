@@ -34,10 +34,19 @@ library(ggplot2)
 casesanddeaths = read.csv(file = "csvs/us-counties.csv")
 data_health = read.csv(file = "csvs/us-county-health-rankings-2020.csv")
 data_mobility = read.csv(file = "csvs/us-mobility.csv")
-
+SAHorder = read.csv(file = "csvs/state-stay-home.csv")
 data_mobility$county = stringr::str_remove(data_mobility$region, " County")
 
 ```
+
+# Go through and note which variable names change
+
+# To Do:
+## Change Period of New Cases (From 1st stay at home order to 2 Weeks after most recent)
+## Make dummy variable for if stay at home occured after google mobility shifts
+## Do AIC for all variables
+## Scatterplot matrix for variables (remove collinear variables and repeat previous step until only less correllated non-outlier variables remain)
+
 
 ```{r}
 
