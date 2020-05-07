@@ -104,111 +104,51 @@ SAHdates_withdata2 = SAHdates_withdata[-earlydates,]
 unimportant_dates = which(as.Date(SAHdates_withdata2$date) != as.Date(SAHdates_withdata2$EFF_DATE) & (as.Date(SAHdates_withdata2$date) - as.Date(SAHdates_withdata2$EFF_DATE) != 21)) #Only have dates for a state based on day of stay at home order and 3 weeks after.
 impdates = SAHdates_withdata2[-unimportant_dates,]
 
-pseudoSAH_dates =  which((impdates$date != "2020-04-08" & impdates$date != "2020-04-29") & (impdates$state == "Wyoming" | impdates$state == "Utah" | impdates$state == "South Dakota" | impdates$state == "Oklahoma" | impdates$state == "North Dakota" | impdates$state == "Nebraska" |impdates$state == "Iowa" | impdates$state == "Arkansas" |impdates$state == "Guam" | impdates$state == "Northern Mariana Islands" | impdates$state == "Puerto Rico" | impdates$state == "Virgin Islands")  )
+pseudoSAH_dates =  which((impdates$date != "2020-04-08" & impdates$date != "2020-04-29") & (impdates$state == "Wyoming" | impdates$state == "Utah" | impdates$state == "South Dakota" | impdates$state == "Oklahoma" | impdates$state == "North Dakota" | impdates$state == "Nebraska" |impdates$state == "Iowa" | impdates$state == "Arkansas" |impdates$state == "Guam" | impdates$state == "Northern Mariana Islands" | impdates$state == "Puerto Rico" | impdates$state == "Virgin Islands")) #For locations where we don't have SAHOrder data
 
 twodatesastate = impdates[-pseudoSAH_dates,]
+```
 
+##Step 6: Make variables differences over the past month to make cross sectional dataset from time-series.
 
+```{r}
+#Generating differences
+sorteddata = twodatesastate[order(as.integer(twodatesastate$fips), as.Date(twodatesastate$date)),] #sort by fips and date
+head(sorteddata)
+
+require("data.table")
+sorteddata <- data.table(sorteddata)
+sorteddata[, case_change := c(NA,diff(cases)), by="fips"]
+sorteddata[, retail_and_rec_pctpoint_change := c(NA,diff(retail_and_recreation_percent_change_from_baseline)), by="fips"]
+sorteddata[, grocery_and_pharmacy_pctpoint_change := c(NA,diff(grocery_and_pharmacy_percent_change_from_baseline)), by="fips"]
+sorteddata[, parks_pctpoint_change := c(NA,diff(parks_percent_change_from_baseline)), by="fips"]
+sorteddata[, transit_stations_pctpoint_change := c(NA,diff(transit_stations_percent_change_from_baseline)), by="fips"]
+sorteddata[, workplaces_pctpoint_change := c(NA,diff(workplaces_percent_change_from_baseline)), by="fips"]
+sorteddata[, residential_pctpoint_change := c(NA,diff(residential_percent_change_from_baseline)), by="fips"]
+
+missingcasedata = which(is.na(sorteddata$case_change))
+finalobs = sorteddata[-missingcasedata,]
 
 ```
 
-# To Do:
-## Change Period of New Cases (From 1st stay at home order to 3 Weeks after)
-## Do AIC for all variables
-## Scatterplot matrix for variables (remove collinear variables and repeat previous step until only less correllated non-outlier variables remain)
-
+##Step7: Add Health Variables and Normalize Case Change
 
 ```{r}
 
-CD_mobility = merge(x = casesanddeaths, y = data_mobility_d, all.x = TRUE, by = c("county", "state", "date"))
-allmerged = merge(x=CD_mobility, y = data_health, all.x = TRUE, by = "fips")
-head(allmerged)
+allmerged = merge(x=finalobs, y = data_health, all.x = TRUE, by = "fips")
+allmerged$case_change_percapita1 = allmerged$case_change / allmerged$population
 
 ```
 
-```{r}
 
-CD_cov19.0324 = CD_mobility[ which(CD_mobility$date.x=='2020-03-24'), ]
-CD_cov19.0329 = CD_mobility[ which(CD_mobility$date.x=='2020-03-29'), ]
-CD_cov19.0330 = CD_mobility[ which(CD_mobility$date.x=='2020-03-30'), ]
-CD_cov19.0331 = CD_mobility[ which(CD_mobility$date.x=='2020-03-31'), ]
-CD_cov19.0401 = CD_mobility[ which(CD_mobility$date.x=='2020-04-01'), ]
-CD_cov19.0402 = CD_mobility[ which(CD_mobility$date.x=='2020-04-02'), ]
-CD_cov19.0403 = CD_mobility[ which(CD_mobility$date.x=='2020-04-03'), ]
-CD_cov19.0404 = CD_mobility[ which(CD_mobility$date.x=='2020-04-04'), ]
-CD_cov19.0405 = CD_mobility[ which(CD_mobility$date.x=='2020-04-05'), ]
-CD_cov19.0406 = CD_mobility[ which(CD_mobility$date.x=='2020-04-06'), ]
-CD_cov19.0407 = CD_mobility[ which(CD_mobility$date.x=='2020-04-07'), ]
-CD_cov19.0408 = CD_mobility[ which(CD_mobility$date.x=='2020-04-08'), ]
-CD_cov19.0409 = CD_mobility[ which(CD_mobility$date.x=='2020-04-09'), ]
-CD_cov19.0410 = CD_mobility[ which(CD_mobility$date.x=='2020-04-10'), ]
-CD_cov19.0411 = CD_mobility[ which(CD_mobility$date.x=='2020-04-11'), ]
-CD_cov19.0412 = CD_mobility[ which(CD_mobility$date.x=='2020-04-12'), ]
-CD_cov19.0413 = CD_mobility[ which(CD_mobility$date.x=='2020-04-13'), ]
-CD_cov19.0414 = CD_mobility[ which(CD_mobility$date.x=='2020-04-14'), ]
-CD_cov19.0415 = CD_mobility[ which(CD_mobility$date.x=='2020-04-15'), ]
-CD_cov19.0416 = CD_mobility[ which(CD_mobility$date.x=='2020-04-16'), ]
-CD_cov19.0417 = CD_mobility[ which(CD_mobility$date.x=='2020-04-17'), ]
-CD_cov19.0418 = CD_mobility[ which(CD_mobility$date.x=='2020-04-18'), ]
-CD_cov19.0419 = CD_mobility[ which(CD_mobility$date.x=='2020-04-19'), ]
-CD_cov19.0420 = CD_mobility[ which(CD_mobility$date.x=='2020-04-20'), ]
-CD_cov19.0421 = CD_mobility[ which(CD_mobility$date.x=='2020-04-21'), ]
-CD_cov19.0422 = CD_mobility[ which(CD_mobility$date.x=='2020-04-22'), ]
-CD_cov19.0423 = CD_mobility[ which(CD_mobility$date.x=='2020-04-23'), ]
-CD_cov19.0424 = CD_mobility[ which(CD_mobility$date.x=='2020-04-24'), ]
-
-cov19.month = merge(x = CD_cov19.0424, y = CD_cov19.0324, by = c("county", "state", "fips", "retail_recreation", "grocery_pharmacy", "parks", "transit_stations", "workplaces", "residential"))
-
-cov19.month$deathmonth = cov19.month$deaths.x - cov19.month$deaths.y
-cov19.month$casesmonth = cov19.month$cases.x - cov19.month$cases.y
-
-####
-cov19.month$date.x.x = NULL
-cov19.month$cases.x = NULL
-cov19.month$deaths.x = NULL
-cov19.month$date.y.x = NULL
-cov19.month$region.x = NULL
-cov19.month$date.x.y = NULL
-cov19.month$cases.y = NULL
-cov19.month$deaths.y = NULL
-cov19.month$date.y.y = NULL
-cov19.month$region.y = NULL
-head(cov19.month)
-#### Delete variables, keep mobility ones and change variable
-  
-allmerged = merge(x=cov19.month, y = data_health, all.x = TRUE, by = c("fips", "county", "state"))
-head(allmerged)
-  
-```
-
-```{r echo = FALSE}
-
-#Used For Picking Better Dates
-
-datasubsets = list(CD_cov19.0329, CD_cov19.0330, CD_cov19.0331, CD_cov19.0401, CD_cov19.0402, CD_cov19.0403, CD_cov19.0404, CD_cov19.0405, CD_cov19.0406, CD_cov19.0407, CD_cov19.0408, CD_cov19.0409, CD_cov19.0410, CD_cov19.0411, CD_cov19.0412, CD_cov19.0413, CD_cov19.0414, CD_cov19.0415, CD_cov19.0416, CD_cov19.0417, CD_cov19.0418, CD_cov19.0419, CD_cov19.0420, CD_cov19.0421, CD_cov19.0422, CD_cov19.0423, CD_cov19.0424)
-
-casesmodels = vector(mode = "list", length = 27)
-deathsmodels = vector(mode = "list", length = 27)
-
-index = 1
-
-for (daydata in datasubsets){
-
-  
-index = index + 1
-
-
-}
-
-```
 
 ```{r}
 
 ## Full Linear Models for Deaths and Cases
 
-cov19_project = subset(allmerged,select=c("fips","state","casesmonth","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","retail_recreation","grocery_pharmacy","parks","transit_stations","workplaces","residential", "average_traffic_volume_per_meter_of_major_roadways"))
+cov19_project = subset(allmerged,select=c("fips","state","case_change","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","retail_and_rec_pctpoint_change","grocery_and_pharmacy_pctpoint_change","parks_pctpoint_change","transit_stations_pctpoint_change","workplaces_pctpoint_change","residential_pctpoint_change", "average_traffic_volume_per_meter_of_major_roadways"))
 
-cov19_project_nm = subset(allmerged,select=c("fips","state","casesmonth","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
+cov19_project_nm = subset(allmerged,select=c("fips","state","case_change","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
 
 ```
 
