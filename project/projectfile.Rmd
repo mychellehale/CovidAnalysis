@@ -27,7 +27,9 @@ library(ggplot2)
 #setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regression_analysis/project/github/covidanalysis/project")
 ```
 
-#Step 1: Import Raw Datasets
+#Data Preparation
+
+##Step 1: Import Raw Datasets
 
 ```{r}
 
@@ -46,7 +48,7 @@ data_mobility_old$county = stringr::str_remove(data_mobility$region, " County")
 ```
 
 
-#Step 2: Create US County Level Data
+##Step 2: Create US County Level Data
 ```{r}
 
 #Clean
@@ -62,21 +64,22 @@ us_mobility<-us_mobility[-nacountries,]
 
 ```
 
-#Step 3: Remove non SAH states
+##Step 3: Remove non SAH states
 
-For this class we are limited to cross-sectional analysis. To address the inherent time-series nature of this data, we are going to perform a transformation that simplifies the data to a 3 week period and only looks at states that stayed at home. Because each state implemented the stay at home orders at different times, our observations are simplified to the change over the 3 week period immediately following the stay at home orders. According to the <a href="https://www.kff.org/other/slide/when-state-stay-at-home-orders-due-to-coronavirus-went-into-effect/"> Kaiser Family Foundation (KFF) </a>, Missouri and South Carolina were the last states to implement these orders on April 7th, 2020. We used the timeline from KFF to determine our observation period. Note according to <a href="https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/"> USA Today </a> , we see that Wyoming, Utah, South Dakota, Oklahoma, North Dakota, Nebraska, Iowa, and Arkansas have not declared stay at home orders. Since these states have very few counties and cases, we will be excluding them from the mobility data prior to the analysis as they could be potential outliers. This only applies for the mobility variables as they are they are the only independent variables that are most likely to be affected by stay at home orders. The health variables are based of pre-pandemic data and thus will not suffer from this issue. 
+For this class we are limited to cross-sectional analysis. To address the inherent time-series nature of this data, we are going to perform a transformation that simplifies the data to a 3 week period and only looks at states that stayed at home. Because each state implemented the stay at home orders at different times, our observations are simplified to the change over the 3 week period immediately following the stay at home orders. According to the <a href="https://www.kff.org/other/slide/when-state-stay-at-home-orders-due-to-coronavirus-went-into-effect/"> Kaiser Family Foundation (KFF) </a>, Missouri and South Carolina were the last states to implement these orders on April 7th, 2020. We used the timeline from KFF to determine our observation period. Note according to <a href="https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/"> USA Today </a> , we see that Wyoming, Utah, South Dakota, Oklahoma, North Dakota, Nebraska, Iowa, and Arkansas have not declared stay at home orders. Since these states have very few counties and cases, we will be excluding them from the mobility data prior to the analysis as they could be potential outliers. This only applies for the mobility variables as they are they are the only independent variables that are most likely to be affected by stay at home orders. The health variables are based on pre-pandemic data and thus will not suffer from this issue. For the dependent variable we look at the 3 week change in cases/population after the most day following the most recent statewide order in the nation (4/8/20). A separate analysis excluding these states will also be included.
+
 
 ```{r}
 #Remove non SAH states
 
-nonSAH_states = which(us_mobility$sub_region_1 == "Wyoming" | us_mobility$sub_region_1 == "Utah" | us_mobility$sub_region_1 == "South Dakota" | us_mobility$sub_region_1 == "Oklahoma" |us_mobility$sub_region_1 == "North Dakota" | us_mobility$sub_region_1 == "Nebraska" |us_mobility$sub_region_1 == "Iowa" | us_mobility$sub_region_1 == "Arkansas")
+nonSAH_states = which(us_mobility$sub_region_1 == "Wyoming" | us_mobility$sub_region_1 == "Utah" | us_mobility$sub_region_1 == "South Dakota" | us_mobility$sub_region_1 == "Oklahoma" |us_mobility$sub_region_1 == "North Dakota" | us_mobility$sub_region_1 == "Nebraska" |us_mobility$sub_region_1 == "Iowa" | us_mobility$sub_region_1 == "Arkansas") #States w/ no stay at home order
 
 us_mobility<-us_mobility[-nonSAH_states,]
 
 ```
 
 
-#Step 4: Merge Mobility & Case Data
+##Step 4: Merge Mobility & Case Data
 ```{r}
 
 #Clean Mobility Data to Merge w/ COVID Data
@@ -87,14 +90,25 @@ CD_mobility = merge(x = casesanddeaths, y = us_mobility, all.x = TRUE, by = c("c
 
 ```
 
-#Step 5: Adjust data based on Stay at Home Orders
+##Step 5: Adjust data based on "Stay at Home" orders
 
 ```{r}
 
 SAHdates_withdata = merge(x = CD_mobility, y = SAHorder, all.x=TRUE, by.x = "state", by.y = "STATE")
-unimportant_dates = which(as.Date(SAHdates_withdata$date) == as.Date(SAHdates_withdata$EFF_DATE) | as.Date(SAHdates_withdata$date) - as.Date(SAHdates_withdata$EFF_DATE) == 21)
 
-impdates = CD_mobility[-unimportant_dates,]
+#Get rid of pre stay at home order dates
+earlydates = which(as.integer(as.Date(SAHdates_withdata$date)) < as.integer(as.Date("2020-03-18")))
+SAHdates_withdata2 = SAHdates_withdata[-earlydates,]
+
+#Focus on key dates
+unimportant_dates = which(as.Date(SAHdates_withdata2$date) != as.Date(SAHdates_withdata2$EFF_DATE) & (as.Date(SAHdates_withdata2$date) - as.Date(SAHdates_withdata2$EFF_DATE) != 21)) #Only have dates for a state based on day of stay at home order and 3 weeks after.
+impdates = SAHdates_withdata2[-unimportant_dates,]
+
+pseudoSAH_dates =  which((impdates$date != "2020-04-08" & impdates$date != "2020-04-29") & (impdates$state == "Wyoming" | impdates$state == "Utah" | impdates$state == "South Dakota" | impdates$state == "Oklahoma" | impdates$state == "North Dakota" | impdates$state == "Nebraska" |impdates$state == "Iowa" | impdates$state == "Arkansas" |impdates$state == "Guam" | impdates$state == "Northern Mariana Islands" | impdates$state == "Puerto Rico" | impdates$state == "Virgin Islands")  )
+
+twodatesastate = impdates[-pseudoSAH_dates,]
+
+
 
 ```
 
