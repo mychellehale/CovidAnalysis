@@ -27,30 +27,86 @@ library(ggplot2)
 #setwd("C:/Users/Nicho/OneDrive/2_Mathematics/School/courses/STAT510_intro_regression_analysis/project/github/covidanalysis/project")
 ```
 
+#Step 1: Import Raw Datasets
 
 ```{r}
-#raw datasets
 
 casesanddeaths = read.csv(file = "csvs/us-counties.csv")
+#casesanddeaths = read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"))
 data_health = read.csv(file = "csvs/us-county-health-rankings-2020.csv")
-data_mobility = read.csv(file = "csvs/us-mobility.csv")
 SAHorder = read.csv(file = "csvs/state-stay-home.csv")
-data_mobility$county = stringr::str_remove(data_mobility$region, " County")
+global_mobility = read.csv(file = "csvs/Global_Mobility_Report.csv")
+#global_mobility = read.csv(url("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=a88b56a24e1a1e25"))
+
+#***REMOVE ONCE NEW DATA IS WORKING***
+data_mobility_old = read.csv(file = "csvs/us-mobility.csv")
+data_mobility_old$county = stringr::str_remove(data_mobility$region, " County")
+#***REMOVE ONCE NEW DATA IS WORKING***
 
 ```
 
-# Go through and note which variable names change
+
+#Step 2: Create US County Level Data
+```{r}
+
+#Clean
+us_mobility = global_mobility
+
+#Remove Non-US Countries
+othercountries<-which(us_mobility$country_region_code!="US")
+us_mobility<-us_mobility[-othercountries,]
+
+#Remove Observations with Missing Country Data
+nacountries<-which(is.na(us_mobility$country_region_code))
+us_mobility<-us_mobility[-nacountries,]
+
+```
+
+#Step 3: Remove non SAH states
+
+For this class we are limited to cross-sectional analysis. To address the inherent time-series nature of this data, we are going to perform a transformation that simplifies the data to a 3 week period and only looks at states that stayed at home. Because each state implemented the stay at home orders at different times, our observations are simplified to the change over the 3 week period immediately following the stay at home orders. According to the <a href="https://www.kff.org/other/slide/when-state-stay-at-home-orders-due-to-coronavirus-went-into-effect/"> Kaiser Family Foundation (KFF) </a>, Missouri and South Carolina were the last states to implement these orders on April 7th, 2020. We used the timeline from KFF to determine our observation period. Note according to <a href="https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/"> USA Today </a> , we see that Wyoming, Utah, South Dakota, Oklahoma, North Dakota, Nebraska, Iowa, and Arkansas have not declared stay at home orders. Since these states have very few counties and cases, we will be excluding them from the mobility data prior to the analysis as they could be potential outliers. This only applies for the mobility variables as they are they are the only independent variables that are most likely to be affected by stay at home orders. The health variables are based of pre-pandemic data and thus will not suffer from this issue. 
+
+```{r}
+#Remove non SAH states
+
+nonSAH_states = which(us_mobility$sub_region_1 == "Wyoming" | us_mobility$sub_region_1 == "Utah" | us_mobility$sub_region_1 == "South Dakota" | us_mobility$sub_region_1 == "Oklahoma" |us_mobility$sub_region_1 == "North Dakota" | us_mobility$sub_region_1 == "Nebraska" |us_mobility$sub_region_1 == "Iowa" | us_mobility$sub_region_1 == "Arkansas")
+
+us_mobility<-us_mobility[-nonSAH_states,]
+
+```
+
+
+#Step 4: Merge Mobility & Case Data
+```{r}
+
+#Clean Mobility Data to Merge w/ COVID Data
+us_mobility$state = us_mobility$sub_region_1
+us_mobility$county = stringr::str_remove(us_mobility$sub_region_2, " County")
+
+CD_mobility = merge(x = casesanddeaths, y = us_mobility, all.x = TRUE, by = c("county", "state", "date"))
+
+```
+
+#Step 5: Adjust data based on Stay at Home Orders
+
+```{r}
+
+SAHdates_withdata = merge(x = CD_mobility, y = SAHorder, all.x=TRUE, by.x = "state", by.y = "STATE")
+unimportant_dates = which(as.Date(SAHdates_withdata$date) == as.Date(SAHdates_withdata$EFF_DATE) | as.Date(SAHdates_withdata$date) - as.Date(SAHdates_withdata$EFF_DATE) == 21)
+
+impdates = CD_mobility[-unimportant_dates,]
+
+```
 
 # To Do:
-## Change Period of New Cases (From 1st stay at home order to 2 Weeks after most recent)
-## Make dummy variable for if stay at home occured after google mobility shifts
+## Change Period of New Cases (From 1st stay at home order to 3 Weeks after)
 ## Do AIC for all variables
 ## Scatterplot matrix for variables (remove collinear variables and repeat previous step until only less correllated non-outlier variables remain)
 
 
 ```{r}
 
-CD_mobility = merge(x = casesanddeaths, y = data_mobility, all.x = TRUE, by = c("county", "state"))
+CD_mobility = merge(x = casesanddeaths, y = data_mobility_d, all.x = TRUE, by = c("county", "state", "date"))
 allmerged = merge(x=CD_mobility, y = data_health, all.x = TRUE, by = "fips")
 head(allmerged)
 
