@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE} 
-pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps", "usmap", "maps", "plotly", "devtools", "stargazer")
+pkgs = c("alr4","rmarkdown", "faraway", "datasets", "sos", "car", "plotly", "ggplot2", "tidyverse", "broom", "SemiPar", "RegularExpressions","GGally", "leaps", "usmap", "maps", "plotly", "devtools", "stargazer", "MASS")
 new.packages = pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -33,8 +33,8 @@ library(ggplot2)
 
 ```{r}
 
-casesanddeaths = read.csv(file = "csvs/us-counties.csv")
-#casesanddeaths = read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"))
+#casesanddeaths = read.csv(file = "csvs/us-counties.csv")
+casesanddeaths = read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"))
 data_health = read.csv(file = "csvs/us-county-health-rankings-2020.csv")
 SAHorder = read.csv(file = "csvs/state-stay-home.csv")
 global_mobility = read.csv(file = "csvs/Global_Mobility_Report.csv")
@@ -66,7 +66,7 @@ us_mobility<-us_mobility[-nacountries,]
 
 ##Step 3: Remove non SAH states
 
-For this class we are limited to cross-sectional analysis. To address the inherent time-series nature of this data, we are going to perform a transformation that simplifies the data to a 3 week period and only looks at states that stayed at home. Because each state implemented the stay at home orders at different times, our observations are simplified to the change over the 3 week period immediately following the stay at home orders. According to the <a href="https://www.kff.org/other/slide/when-state-stay-at-home-orders-due-to-coronavirus-went-into-effect/"> Kaiser Family Foundation (KFF) </a>, Missouri and South Carolina were the last states to implement these orders on April 7th, 2020. We used the timeline from KFF to determine our observation period. Note according to <a href="https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/"> USA Today </a> , we see that Wyoming, Utah, South Dakota, Oklahoma, North Dakota, Nebraska, Iowa, and Arkansas have not declared stay at home orders. Since these states have very few counties and cases, we will be excluding them from the mobility data prior to the analysis as they could be potential outliers. This only applies for the mobility variables as they are they are the only independent variables that are most likely to be affected by stay at home orders. The health variables are based on pre-pandemic data and thus will not suffer from this issue. For the dependent variable we look at the 3 week change in cases/population after the most day following the most recent statewide order in the nation (4/8/20). A separate analysis excluding these states will also be included.
+For this class we are limited to cross-sectional analysis. To address the inherent time-series nature of this data, we are going to perform a transformation that simplifies the data to a 4 week period and only looks at states that stayed at home. Because each state implemented the stay at home orders at different times, our observations are simplified to the change over the 4 week period immediately following the stay at home orders. According to the <a href="https://www.kff.org/other/slide/when-state-stay-at-home-orders-due-to-coronavirus-went-into-effect/"> Kaiser Family Foundation (KFF) </a>, Missouri and South Carolina were the last states to implement these orders on April 7th, 2020. We used the timeline from KFF to determine our observation period. Note according to <a href="https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/"> USA Today </a> , we see that Wyoming, Utah, South Dakota, Oklahoma, North Dakota, Nebraska, Iowa, and Arkansas have not declared stay at home orders. Since these states have very few counties and cases, we will be excluding them from the mobility data prior to the analysis as they could be potential outliers. This only applies for the mobility variables as they are they are the only independent variables that are most likely to be affected by stay at home orders. The health variables are based on pre-pandemic data and thus will not suffer from this issue. For the dependent variable we look at the 4 week change in cases/population after the most day following the most recent statewide order in the nation (4/8/20). A separate analysis excluding these states will also be included.
 
 
 ```{r}
@@ -101,10 +101,10 @@ earlydates = which(as.integer(as.Date(SAHdates_withdata$date)) < as.integer(as.D
 SAHdates_withdata2 = SAHdates_withdata[-earlydates,]
 
 #Focus on key dates
-unimportant_dates = which(as.Date(SAHdates_withdata2$date) != as.Date(SAHdates_withdata2$EFF_DATE) & (as.Date(SAHdates_withdata2$date) - as.Date(SAHdates_withdata2$EFF_DATE) != 21)) #Only have dates for a state based on day of stay at home order and 3 weeks after.
+unimportant_dates = which(as.Date(SAHdates_withdata2$date) != as.Date(SAHdates_withdata2$EFF_DATE) & (as.Date(SAHdates_withdata2$date) - as.Date(SAHdates_withdata2$EFF_DATE) != 28)) #Only have dates for a state based on day of stay at home order and 3 weeks after.
 impdates = SAHdates_withdata2[-unimportant_dates,]
 
-pseudoSAH_dates =  which((impdates$date != "2020-04-08" & impdates$date != "2020-04-29") & (impdates$state == "Wyoming" | impdates$state == "Utah" | impdates$state == "South Dakota" | impdates$state == "Oklahoma" | impdates$state == "North Dakota" | impdates$state == "Nebraska" |impdates$state == "Iowa" | impdates$state == "Arkansas" |impdates$state == "Guam" | impdates$state == "Northern Mariana Islands" | impdates$state == "Puerto Rico" | impdates$state == "Virgin Islands")) #For locations where we don't have SAHOrder data
+pseudoSAH_dates =  which((impdates$date != "2020-04-08" & impdates$date != "2020-05-06") & (impdates$state == "Wyoming" | impdates$state == "Utah" | impdates$state == "South Dakota" | impdates$state == "Oklahoma" | impdates$state == "North Dakota" | impdates$state == "Nebraska" |impdates$state == "Iowa" | impdates$state == "Arkansas" |impdates$state == "Guam" | impdates$state == "Northern Mariana Islands" | impdates$state == "Puerto Rico" | impdates$state == "Virgin Islands")) #For locations where we don't have SAHOrder data
 
 twodatesastate = impdates[-pseudoSAH_dates,]
 ```
@@ -137,55 +137,69 @@ finalobs = sorteddata[-missingcasedata,]
 
 allmerged = merge(x=finalobs, y = data_health, all.x = TRUE, by = "fips")
 allmerged$case_change_percapita1 = allmerged$case_change / allmerged$population
+allmerged$state = allmerged$state.x
 
 ```
 
 
-
+##Step8: Make datasets with variables of interest.
 ```{r}
 
-## Full Linear Models for Deaths and Cases
+## Full Linear Models for Cases
 
-cov19_project = subset(allmerged,select=c("fips","state","case_change","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","retail_and_rec_pctpoint_change","grocery_and_pharmacy_pctpoint_change","parks_pctpoint_change","transit_stations_pctpoint_change","workplaces_pctpoint_change","residential_pctpoint_change", "average_traffic_volume_per_meter_of_major_roadways"))
+alldata = subset(allmerged, select=c("fips","state","case_change_percapita1","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","workplaces_pctpoint_change", "retail_and_rec_pctpoint_change","grocery_and_pharmacy_pctpoint_change","parks_pctpoint_change","transit_stations_pctpoint_change","residential_pctpoint_change", "average_traffic_volume_per_meter_of_major_roadways"))
 
-cov19_project_nm = subset(allmerged,select=c("fips","state","case_change","deathmonth","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
+healthsubset = subset(allmerged,select=c("fips","state","case_change_percapita1","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
+
+#For checking which mobility variable will be og greatest interest
+# summary(alldata$retail_and_rec_pctpoint_change)
+# summary(alldata$grocery_and_pharmacy_pctpoint_change) 
+# summary(alldata$parks_pctpoint_change)
+# summary(alldata$transit_stations_pctpoint_change)
+# summary(alldata$workplaces_pctpoint_change)
+# summary(alldata$residential_pctpoint_change)
 
 ```
 
 
 
-## Checking Correlation between variables and also linearity between independent variables and the dependent variable
+## Step 9: Check Correlation between variables and also linearity between independent variables and the dependent variable
 ```{r}
 #based on the output here, we will probably need to log transform casesmonth
-ggpairs(cov19_project_nm, columns = c(3, 5:12))
-ggpairs(cov19_project_nm, columns = c(3, 13:19))
-
+ggpairs(healthsubset, columns = c(3, 5:9))
+ggpairs(healthsubset, columns = c(3, 10:14))
+ggpairs(healthsubset, columns = c(3, 14:18))
 #head(cov19_project_nm)
 ```
 
-```{r}
-#based on the output here, we will probably need to log transform casesmonth
-ggpairs(cov19_project, columns = c(3, 5:12))
-ggpairs(cov19_project, columns = c(3, 13:19))
-ggpairs(cov19_project, columns = c(3, 20:27))
-head(cov19_project)
- # mobility variables
-```
+We can see that there is non-normality of the case change per capita variable. We will likely log transform this variable. Immdiately we see some variables have unequal variance, but we will perform variable selection before making any transformations.
+
+As far as variables that are collinear, we make the following observations:
+We see that life expectancy is collinear with many of the variables. This is to be expected since it is a more general term that is determined by the other variables.This wouldn't be useful as an interaction term, so we will look at the scatterplot matrix of variables correlated with life expectancy.
+
+
+## Step 10: Look at coorelation with life expectancy.
 
 
 ```{r}
-
-cov19_project_nm$householdspercapita = cov19_project_nm$num_households/cov19_project_nm$population_2
-cov19_project_nm$log_rural = log(cov19_project_nm$percent_rural)
-cov19_project_nm$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
-
-
+ggpairs(healthsubset, columns = c(10, 5,11,12))
+#head(cov19_project_nm)
 ```
+
+Based off this information we can see that median household income might be the interaction with these variables. Life expectancy could be collinear with percent smokers and percent food insecure, but applying our variable selection criteria should remove the variable with the least amount of explanatory power.
+
+## Step 11: Use Box-cox method to determine best transformation for the dependent variable. The variable tempcases is simply to be positive to prevent errors for the box cox transformation
 
 ```{r}
 library(car)
 
-boxcoxtestreg = lm(data = na.omit(cov19_project_nm), casesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor )
+summary(healthsubset$case_change_percapita1)
+
+
+healthsubset$tempcases = healthsubset$case_change_percapita1 + .00084
+
+boxcoxtestreg = lm(data = na.omit(healthsubset), tempcases ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + num_households +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over + percent_rural )
+
 bc = boxCox(boxcoxtestreg)
 
 lambda.opt = bc$x[which.max(bc$y)]
@@ -193,101 +207,118 @@ lambda.opt
 
 #Confirms that log transform is the best for cases
 
-cov19_project_nm$logcasesmonth = log(cov19_project_nm$casesmonth)
+healthsubset$logcasechange = log(healthsubset$case_change_percapita1 + .0084)
 
 ```
 
+From the box-cox method, we can see that a log transformation is most appropriate.
 
-
+## Step 12: We can now do variable selection using the AIC variable selection criteria.
 
 ```{r}
 
-mod0.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~ 1)
-mod0.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate +percent_vaccinated + householdspercapita +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure +median_household_income +percent_65_and_over +majorityruralfactor +percent_uninsured)
+mod0.lower_cases = lm(data = na.omit(healthsubset), logcasechange ~ 1)
+mod0.upper_cases = lm(data = na.omit(healthsubset), logcasechange ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate +percent_vaccinated + num_households +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure +median_household_income +percent_65_and_over +percent_rural +percent_uninsured)
 step(mod0.lower_cases, scope = list(lower = mod0.lower_cases, upper = mod0.upper_cases))
 
-mod1.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+```
 
-step(mod0.lower_cases, scope = list(lower = mod0.lower_cases, upper = mod1.upper_cases))
+## Step 13: We now have the base model for what variables we will be using. Now we must check the 4 assumptions of Multiple Linear Regression: Linearity, Independence, Normality, and Equal Variance
 
-lm1 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+```{r}
 
-shapiro.test(residuals(lm1))
+lm1 = lm(formula = logcasechange ~ percent_low_birthweight + median_household_income + percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
 
-plot(y = residuals(lm1), x = fitted(lm1))
-plot(y = residuals(lm1), x = na.omit(cov19_project_nm)$percent_low_birthweight)
-#Concentrated on left, log transform var
-cov19_project_nm$log_percent_low_birthweight = log(cov19_project_nm$percent_low_birthweight)
+shapiro.test(residuals(lm1)) ## We fail the shapiro test. So the present model fails the normality assumption. Let us examine the residuals vs. fit plot first.
 
-lm3 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight +percent_smokers +primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+plot(y = residuals(lm1), x = fitted(lm1)) #We don't see a terrible issue with the variance, but there is some of a fanning pattern. We will now check the residuals vs. the variables to see if we can resolve this issue with some variable transformations.
 
+plot(y = residuals(lm1), x = na.omit(healthsubset)$percent_low_birthweight) #Concentrated on left, log transform var
+healthsubset$log_percent_low_birthweight = log(healthsubset$percent_low_birthweight)
 
-plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$log_percent_low_birthweight)
+lm2 = lm(formula = logcasechange ~ log_percent_low_birthweight + median_household_income + percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
 
+plot(y=residuals(lm2), x= na.omit(healthsubset)$log_percent_low_birthweight) #This is a significant improvement from the previous scatterplot.
 
-summary(lm1)
-summary(lm3) #R-Squared went up
+plot(y=residuals(lm2), x= na.omit(healthsubset)$median_household_income) #Needs log transform
+healthsubset$log_median_household_income = log(healthsubset$median_household_income)
 
-plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$percent_smokers) #looks like equal variance is satisfied
-plot(y=residuals(lm3), x= na.omit(cov19_project_nm)$primary_care_physicians_rate) #Needs log transform
+lm3 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
 
+plot(y=residuals(lm3), x= na.omit(healthsubset)$log_median_household_income) #This is a significant improvement from the previous scatterplot.
 
-cov19_project_nm$log_primary_care_physicians_rate = log(cov19_project_nm$primary_care_physicians_rate)
+plot(y=residuals(lm3), x= na.omit(healthsubset)$percent_food_insecure) #Needs log transform
+healthsubset$log_percent_food_insecure = log(healthsubset$percent_food_insecure)
 
-lm4 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+lm4 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
 
-summary(lm3)
-summary(lm4) #R-Squared went up
+plot(y=residuals(lm4), x= na.omit(healthsubset)$log_percent_food_insecure) #This is a significant improvement
 
-plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$log_primary_care_physicians_rate) #Mostly solves unequal var.
-plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$householdspercapita) #looks like equal variance is satisfied
-plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$average_daily_pm2_5) #looks like equal variance is satisfied
-plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$life_expectancy)
-plot(y=residuals(lm4), x= na.omit(cov19_project_nm)$infant_mortality_rate) #some funnelling
+plot(y=residuals(lm4), x= na.omit(healthsubset)$percent_rural) #While there is a slight degree of funnelling, the variance looks mostly equal. Especially when compared to the other variables
 
-cov19_project_nm$log_infant_mortality_rate = log(cov19_project_nm$infant_mortality_rate)
+plot(y=residuals(lm4), x= na.omit(healthsubset)$average_daily_pm2_5) #Needs log transform
+healthsubset$log_average_daily_pm2_5 = log(healthsubset$average_daily_pm2_5)
 
-lm5 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +median_household_income +percent_65_and_over +majorityruralfactor)
+lm5 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + log_average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset)) 
 
-plot(y=residuals(lm5), x= na.omit(cov19_project_nm)$log_infant_mortality_rate) #fixes unequal variance
+plot(y=residuals(lm5), x= na.omit(healthsubset)$log_average_daily_pm2_5) #This isn't perfect, but it is an improvement from the previous plot.
 
-summary(lm4)
-summary(lm5) #r-squared goes down but unequal variance is handled
+plot(y=residuals(lm5), x= na.omit(healthsubset)$percent_uninsured) #Slight funnelling pattern that is stronger than the percent_rural pattern. Will need a log transform.
 
-plot(y=residuals(lm5), x= na.omit(cov19_project_nm)$median_household_income) #some funnelling
+healthsubset$log_percent_uninsured = log(healthsubset$percent_uninsured)
 
-cov19_project_nm$log_median_household_income = log(cov19_project_nm$median_household_income)
+lm6 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + log_average_daily_pm2_5 + log_percent_uninsured + child_mortality_rate, data = na.omit(healthsubset)) 
 
-lm6 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income +percent_65_and_over +majorityruralfactor)
+plot(y=residuals(lm6), x= na.omit(healthsubset)$log_percent_uninsured) #Equal variance problem solved.
 
-summary(lm5)
-summary(lm6) #r-squared goes up
+plot(y=residuals(lm6), x= na.omit(healthsubset)$child_mortality_rate) #Needs log transform
 
-plot(y=residuals(lm6), x= na.omit(cov19_project_nm)$log_median_household_income) #unequal variance handled
-plot(y=residuals(lm6), x= na.omit(cov19_project_nm)$percent_65_and_over)
+healthsubset$log_child_mortality_rate = log(healthsubset$child_mortality_rate)
 
-cov19_project_nm$log_percent_65_and_over = log(cov19_project_nm$percent_65_and_over)
+lm7 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + log_average_daily_pm2_5 + log_percent_uninsured + log_child_mortality_rate, data = na.omit(healthsubset)) 
 
-lm7 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + householdspercapita +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
-
-summary(lm6)
-summary(lm7)
-
-plot(y=residuals(lm7), x= na.omit(cov19_project_nm)$log_percent_65_and_over) #unequal variance handled
+plot(y=residuals(lm7), x= na.omit(healthsubset)$log_child_mortality_rate) #Equal variance issue solved
 
 shapiro.test(residuals(lm7))
 
 summary(lm7)
 
-ggpairs(data = na.omit(cov19_project_nm), columns = c("logcasesmonth", "log_percent_low_birthweight", "percent_smokers", "log_primary_care_physicians_rate", "householdspercapita", "average_daily_pm2_5", "life_expectancy", "log_median_household_income", "log_percent_65_and_over", "majorityruralfactor"))
-
-
-lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
-
-shapiro.test(residuals(lm8))
-
 ```
+
+Unfortunately this did not solve our normality issue.
+
 ```{r}
+ggpairs(data = na.omit(healthsubset), columns = c("log_percent_low_birthweight", "log_median_household_income", "log_percent_food_insecure", "percent_rural", "log_average_daily_pm2_5", "log_percent_uninsured", "log_child_mortality_rate"))
+
+##Percent rural might be better log transformed
+healthsubset$log_percent_rural = log(healthsubset$percent_rural + 1) #add +1 for locations with 0 values
+
+lm8 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + log_percent_rural + log_average_daily_pm2_5 + log_percent_uninsured + log_child_mortality_rate, data = na.omit(healthsubset)) 
+
+plot(y=residuals(lm8), x= na.omit(healthsubset)$log_percent_rural) #Fairly equal variance
+
+shapiro.test(residuals(lm8)) #Normality still not solved.
+
+
+plot(y=residuals(lm8), x= fitted(lm8))
+```
+
+The transformations didn't change our residual vs fit plot or our normality issues. We will implement run some interaction terms through variable selection to see if they normalize our model.
+
+
+### Add Variables We Previously had back into the model.
+
+## Step 14: Test Potential Interaction Effects
+
+```{r}
+library(MASS)
+lm8interactions = stepAIC(lm8, scope=list(upper= ~log_percent_low_birthweight*log_median_household_income*log_percent_food_insecure*log_percent_rural*log_average_daily_pm2_5*log_percent_uninsured*log_child_mortality_rate, lower= ~1))
+
+shapiro.test(residuals(lm8interactions))
+
+
+ggpairs(data = na.omit(healthsubset), columns = c("log_percent_low_birthweight", "log_median_household_income", "log_percent_food_insecure", "log_percent_rural", "log_average_daily_pm2_5", "log_percent_uninsured", "log_child_mortality_rate"))
+
 #interaction terms
 
 #majority rural and other factors
@@ -305,6 +336,10 @@ mod2.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_per
 step(mod2.lower_cases, scope = list(lower = mod2.lower_cases, upper = mod2.upper_cases))
 
 ```
+
+
+
+
 
 ```{r}
 
