@@ -404,7 +404,7 @@ Now we will test interaction terms with variable selection.
 library(MASS)
 
 help(stepAIC)
-lm10interactions = stepAIC(lm10, scope=list(upper= logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_infant_mortality_rate + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:percent_rural + loghouseholds:logmedincome + loghouseholds:log_percent_low_birthweight + loghouseholds:percent_vaccinated + loghouseholds:log_infant_mortality_rate + loghouseholds:log_percent_uninsured + loghouseholds:life_expectancy + loghouseholds:log_average_daily_pm2_5 + loghouseholds:log_child_mortality_rate + loghouseholds:log_percent_food_insecure + loghouseholds:percent_smokers, lower= ~1))
+lm10interactions = stepAIC(lm10, scope=list(upper= logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_infant_mortality_rate + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + logmedincome:percent_rural + logmedincome:logmedincome + logmedincome:log_percent_low_birthweight + logmedincome:percent_vaccinated + logmedincome:log_infant_mortality_rate + logmedincome:log_percent_uninsured + logmedincome:life_expectancy + logmedincome:log_average_daily_pm2_5 + logmedincome:log_child_mortality_rate + logmedincome:log_percent_food_insecure + logmedincome:percent_smokers, lower= ~1))
 
 ```
 
@@ -434,7 +434,11 @@ highLeverage
 
 healthsubset.new = na.omit(healthsubset)[!highLeverage,]
 
-lm10interactions.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate +  loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight +     loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy + percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure, data = healthsubset.new)
+lm10interactions.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
+    log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
+    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
+    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
+    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, data = healthsubset.new)
 lm10interactions.lower = lm(logcasechange ~ 1, data = healthsubset.new)
 
 shapiro.test(residuals(lm10interactions.new))
@@ -462,19 +466,15 @@ head(alldata)
 
 basemobilitymodel = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
     log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + 
-    log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate + 
-    loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight + 
-    loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy + 
-    percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure, na.omit(alldata))
+    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
+    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
+    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, na.omit(alldata))
 
 mobilitymodel = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
     log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + 
-    log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate + 
-    loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight + 
-    loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy +
-    percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, na.omit(alldata))
+    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
+    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
+    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, na.omit(alldata))
 
 
 cooks = cooks.distance(basemobilitymodel)
@@ -488,15 +488,17 @@ highLeverage
 
 alldata.new = na.omit(alldata)[!highLeverage,]
 
-basemobilitymodel.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate +  loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight +     loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy + percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure, data = alldata.new)
+basemobilitymodel.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
+    log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
+    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
+    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
+    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, data = alldata.new)
 
 mobilitymodel.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
     log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + 
-    log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate + 
-    loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight + 
-    loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy +
-    percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, data = alldata.new)
+    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
+    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
+    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, data = alldata.new)
 
 shapiro.test(residuals(basemobilitymodel.new))
 summary(basemobilitymodel.new)
@@ -519,7 +521,7 @@ anova(basemobilitymodel.new, mobilitymodel.new)
 
 ```
 
-We see that w/ 99% confidence, we know that at least one mobility variable is significant.
+We see that w/ 95% confidence, we know that at least one mobility variable is significant.
 
 ## Step 20: Output tables
 
