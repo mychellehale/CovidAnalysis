@@ -184,7 +184,7 @@ As far as variables that are collinear, we make the following observations:
 We see that life expectancy is collinear with many of the variables. This is to be expected since it is a more general term that is determined by the other variables.This wouldn't be useful as an interaction term, so we will look at the scatterplot matrix of variables correlated with life expectancy.
 
 
-## Step 10: Look at coorelation with life expectancy.
+## Step 10: Look at correlation with life expectancy.
 
 
 ```{r}
@@ -420,17 +420,30 @@ We still did not achieve normality, so we must remove outliers.
 ## Step 17: Remove outliers
 
 ```{r}
+cooks = cooks.distance(lm10interactions)
+n = nrow(na.omit(healthsubset))
 
+plot(lm10interactions, which = 4)
+abline(h = 1, lty = 2)
 
+highLeverage = cooks.distance(lm10interactions)> (4/n)
+highLeverage 
 
+healthsubset.new = na.omit(healthsubset)[!highLeverage,]
+
+lm10interactions.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate +  loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight +     loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy +     percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure, data = healthsubset.new)
+lm10interactions.lower = lm(logcasechange ~ 1, data = healthsubset.new)
+
+shapiro.test(residuals(lm10interactions.new))
+summary(lm10interactions.new)
+summary(lm10interactions)
 ```
 
 
 ## Step 18: General F-test for mobility variables
 
 ```{r}
-
-
+anova(lm10interactions.lower, lm10interactions.new)
 
 ```
 
