@@ -347,6 +347,8 @@ plot(y=residuals(lm8), x=na.omit(healthsubset)$log_child_mortality_rate) #Fixed 
 
 plot(y=residuals(lm8), x=na.omit(healthsubset)$percent_food_insecure) #Funnelling pattern
 
+summary(lm8)
+
 healthsubset$log_percent_food_insecure = log(healthsubset$percent_food_insecure) 
 
 lm9 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
@@ -431,12 +433,15 @@ highLeverage
 
 healthsubset.new = na.omit(healthsubset)[!highLeverage,]
 
-lm10interactions.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate +  loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight +     loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy +     percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure, data = healthsubset.new)
+lm10interactions.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:log_child_mortality_rate +  loghouseholds:log_percent_uninsured + loghouseholds:log_percent_low_birthweight +     loghouseholds:log_average_daily_pm2_5 + loghouseholds:life_expectancy + percent_rural:loghouseholds + loghouseholds:log_percent_food_insecure, data = healthsubset.new)
 lm10interactions.lower = lm(logcasechange ~ 1, data = healthsubset.new)
 
 shapiro.test(residuals(lm10interactions.new))
 summary(lm10interactions.new)
 summary(lm10interactions)
+
+which(highLeverage == TRUE)
+which(outliers == TRUE)
 ```
 
 
