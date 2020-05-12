@@ -62,6 +62,10 @@ us_mobility<-us_mobility[-othercountries,]
 nacountries<-which(is.na(us_mobility$country_region_code))
 us_mobility<-us_mobility[-nacountries,]
 
+#Remove non-county subregion_2 observations (i.e. cities, state level observations)
+
+us_mobility = us_mobility[grepl("County", us_mobility$sub_region_2),]
+
 ```
 
 ##Step 3: Remove non SAH states
@@ -127,16 +131,18 @@ sorteddata[, workplaces_pctpoint_change := c(NA,diff(workplaces_percent_change_f
 sorteddata[, residential_pctpoint_change := c(NA,diff(residential_percent_change_from_baseline)), by="fips"]
 
 missingcasedata = which(is.na(sorteddata$case_change))
-finalobs = sorteddata[-missingcasedata,]
+almostfinalobs = sorteddata[-missingcasedata,]
+missingfipsdata = which(is.na(almostfinalobs$fips))
+
+finalobs = almostfinalobs[-missingfipsdata,]
 
 ```
 
-##Step7: Add Health Variables and Normalize Case Change
+##Step7: Add Health Variables
 
 ```{r}
 
 allmerged = merge(x=finalobs, y = data_health, all.x = TRUE, by = "fips")
-allmerged$case_change_percapita1 = allmerged$case_change / allmerged$population
 allmerged$state = allmerged$state.x
 
 ```
@@ -147,9 +153,9 @@ allmerged$state = allmerged$state.x
 
 ## Full Linear Models for Cases
 
-alldata = subset(allmerged, select=c("fips","state","case_change_percapita1","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","workplaces_pctpoint_change", "retail_and_rec_pctpoint_change","grocery_and_pharmacy_pctpoint_change","parks_pctpoint_change","transit_stations_pctpoint_change","residential_pctpoint_change", "average_traffic_volume_per_meter_of_major_roadways"))
+alldata = subset(allmerged, select=c("fips","state","case_change","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","average_traffic_volume_per_meter_of_major_roadways","population_2","percent_65_and_over","percent_rural","percent_uninsured","workplaces_pctpoint_change", "retail_and_rec_pctpoint_change","grocery_and_pharmacy_pctpoint_change","parks_pctpoint_change","transit_stations_pctpoint_change","residential_pctpoint_change", "average_traffic_volume_per_meter_of_major_roadways"))
 
-healthsubset = subset(allmerged,select=c("fips","state","case_change_percapita1","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
+healthsubset = subset(allmerged,select=c("fips","state","case_change","percent_low_birthweight","percent_smokers","primary_care_physicians_rate","percent_vaccinated","num_households","average_daily_pm2_5","life_expectancy","child_mortality_rate","infant_mortality_rate","percent_food_insecure","median_household_income","population_2","percent_65_and_over","percent_rural","percent_uninsured"))
 
 #For checking which mobility variable will be og greatest interest
 # summary(alldata$retail_and_rec_pctpoint_change)
@@ -166,7 +172,7 @@ healthsubset = subset(allmerged,select=c("fips","state","case_change_percapita1"
 ## Step 9: Check Correlation between variables and also linearity between independent variables and the dependent variable
 ```{r}
 #based on the output here, we will probably need to log transform casesmonth
-ggpairs(healthsubset, columns = c(3, 5:9))
+ggpairs(healthsubset, columns = c(3, 4:9))
 ggpairs(healthsubset, columns = c(3, 10:14))
 ggpairs(healthsubset, columns = c(3, 14:18))
 #head(cov19_project_nm)
@@ -182,21 +188,21 @@ We see that life expectancy is collinear with many of the variables. This is to 
 
 
 ```{r}
-ggpairs(healthsubset, columns = c(10, 5,11,12))
+ggpairs(healthsubset, columns = c(10, 4,5,11,12,13,14))
 #head(cov19_project_nm)
 ```
 
-Based off this information we can see that median household income might be the interaction with these variables. Life expectancy could be collinear with percent smokers and percent food insecure, but applying our variable selection criteria should remove the variable with the least amount of explanatory power.
+Based off this information we can see that median household income might be the interaction with these variables. Life expectancy could be collinear with percent smokers and percent food insecure, but applying our variable selection criteria should remove the variable with the least amount of explanatory power. We should look for interactions with these variables after the variable selection.If interactions from here are not significant later in the selection process than we will remove collinear terms based on their signifigance.
 
 ## Step 11: Use Box-cox method to determine best transformation for the dependent variable. The variable tempcases is simply to be positive to prevent errors for the box cox transformation
 
 ```{r}
 library(car)
 
-summary(healthsubset$case_change_percapita1)
+summary(healthsubset$case_change)
+hist(healthsubset$case_change)
 
-
-healthsubset$tempcases = healthsubset$case_change_percapita1 + .00084
+healthsubset$tempcases = healthsubset$case_change + 1.5 #Only to remove negative issue from boxcox and for future log transform
 
 boxcoxtestreg = lm(data = na.omit(healthsubset), tempcases ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate + num_households +average_daily_pm2_5 +life_expectancy +infant_mortality_rate +median_household_income +percent_65_and_over + percent_rural )
 
@@ -207,7 +213,8 @@ lambda.opt
 
 #Confirms that log transform is the best for cases
 
-healthsubset$logcasechange = log(healthsubset$case_change_percapita1 + .0084)
+
+healthsubset$logcasechange = log(healthsubset$tempcases) #usingtemp cases to remove places that reduced cases
 
 ```
 
@@ -218,283 +225,382 @@ From the box-cox method, we can see that a log transformation is most appropriat
 ```{r}
 
 mod0.lower_cases = lm(data = na.omit(healthsubset), logcasechange ~ 1)
-mod0.upper_cases = lm(data = na.omit(healthsubset), logcasechange ~  percent_low_birthweight +percent_smokers +primary_care_physicians_rate +percent_vaccinated + num_households +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure +median_household_income +percent_65_and_over +percent_rural +percent_uninsured)
+mod0.upper_cases = lm(data = na.omit(healthsubset), logcasechange ~  percent_low_birthweight + percent_smokers +primary_care_physicians_rate +percent_vaccinated + num_households +average_daily_pm2_5 +life_expectancy +child_mortality_rate +infant_mortality_rate +percent_food_insecure +median_household_income +percent_65_and_over +percent_rural +percent_uninsured)
 step(mod0.lower_cases, scope = list(lower = mod0.lower_cases, upper = mod0.upper_cases))
 
 ```
 
 ## Step 13: We now have the base model for what variables we will be using. Now we must check the 4 assumptions of Multiple Linear Regression: Linearity, Independence, Normality, and Equal Variance
 
+
 ```{r}
 
-lm1 = lm(formula = logcasechange ~ percent_low_birthweight + median_household_income + percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
+lm1 = lm(formula = logcasechange ~ percent_rural + num_households + 
+    median_household_income + percent_low_birthweight + percent_vaccinated + 
+    infant_mortality_rate + percent_uninsured + life_expectancy + 
+    average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
 
-shapiro.test(residuals(lm1)) ## We fail the shapiro test. So the present model fails the normality assumption. Let us examine the residuals vs. fit plot first.
+plot(residuals(lm1), fitted(lm1))
 
-plot(y = residuals(lm1), x = fitted(lm1)) #We don't see a terrible issue with the variance, but there is some of a fanning pattern. We will now check the residuals vs. the variables to see if we can resolve this issue with some variable transformations.
+shapiro.test(residuals(lm1)) #Doesn't pass normality
+hist(residuals(lm1)) #Looks relatively normal
+plot(lm1, which = 2) #Looks relatively normal
 
-plot(y = residuals(lm1), x = na.omit(healthsubset)$percent_low_birthweight) #Concentrated on left, log transform var
+
+```
+We appear to have decent equal variance, linearity, and assume independence. However our model still does not satisfy the normality condition. To resolve this issue we will look to see if each variable satisfies equal variance conditions and then recheck normality.
+
+```{r}
+
+plot(y = residuals(lm1), x = na.omit(healthsubset)$percent_rural) # relatively equal variance. appears there is one particular outlier
+
+plot(y = residuals(lm1), x= na.omit(healthsubset)$num_households) # clear funnelling patter that could use a log transform.
+
+healthsubset$loghouseholds = log(healthsubset$num_households)
+
+lm2 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    median_household_income + percent_low_birthweight + percent_vaccinated + 
+    infant_mortality_rate + percent_uninsured + life_expectancy + 
+    average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
+
+plot(y = residuals(lm2), x=na.omit(healthsubset)$loghouseholds) #Still some minor funnelling, but less severe than in the previous graph
+
+plot(y = residuals(lm2), x= na.omit(healthsubset)$median_household_income) #some minor funnelling, log transform might help
+
+
+healthsubset$logmedincome = log(healthsubset$median_household_income)
+
+lm3 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + percent_low_birthweight + percent_vaccinated + 
+    infant_mortality_rate + percent_uninsured + life_expectancy + 
+    average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
+
+plot(y = residuals(lm3), x=na.omit(healthsubset)$logmedincome) #Equal Variance Acheived
+
+plot(y = residuals(lm3), x=na.omit(healthsubset)$percent_low_birthweight) #some minor funnelling, log transform might help
+
+
 healthsubset$log_percent_low_birthweight = log(healthsubset$percent_low_birthweight)
 
-lm2 = lm(formula = logcasechange ~ log_percent_low_birthweight + median_household_income + percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
+lm4 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    infant_mortality_rate + percent_uninsured + life_expectancy + 
+    average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
 
-plot(y=residuals(lm2), x= na.omit(healthsubset)$log_percent_low_birthweight) #This is a significant improvement from the previous scatterplot.
+plot(y = residuals(lm4), x=na.omit(healthsubset)$log_percent_low_birthweight) #Equal Variance Acheived
 
-plot(y=residuals(lm2), x= na.omit(healthsubset)$median_household_income) #Needs log transform
-healthsubset$log_median_household_income = log(healthsubset$median_household_income)
+plot(y = residuals(lm4), x=na.omit(healthsubset)$percent_vaccinated) #Seems like there is equal variance
+plot(y = residuals(lm4), x=na.omit(healthsubset)$infant_mortality_rate) #Needs log transform
 
-lm3 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
+healthsubset$log_infant_mortality_rate = log(healthsubset$infant_mortality_rate)
 
-plot(y=residuals(lm3), x= na.omit(healthsubset)$log_median_household_income) #This is a significant improvement from the previous scatterplot.
+lm5 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    log_infant_mortality_rate + percent_uninsured + life_expectancy + 
+    average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
 
-plot(y=residuals(lm3), x= na.omit(healthsubset)$percent_food_insecure) #Needs log transform
-healthsubset$log_percent_food_insecure = log(healthsubset$percent_food_insecure)
+plot(y = residuals(lm5), x=na.omit(healthsubset)$log_infant_mortality_rate) #equal variance acheived
 
-lm4 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset))
-
-plot(y=residuals(lm4), x= na.omit(healthsubset)$log_percent_food_insecure) #This is a significant improvement
-
-plot(y=residuals(lm4), x= na.omit(healthsubset)$percent_rural) #While there is a slight degree of funnelling, the variance looks mostly equal. Especially when compared to the other variables
-
-plot(y=residuals(lm4), x= na.omit(healthsubset)$average_daily_pm2_5) #Needs log transform
-healthsubset$log_average_daily_pm2_5 = log(healthsubset$average_daily_pm2_5)
-
-lm5 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + log_average_daily_pm2_5 + percent_uninsured + child_mortality_rate, data = na.omit(healthsubset)) 
-
-plot(y=residuals(lm5), x= na.omit(healthsubset)$log_average_daily_pm2_5) #This isn't perfect, but it is an improvement from the previous plot.
-
-plot(y=residuals(lm5), x= na.omit(healthsubset)$percent_uninsured) #Slight funnelling pattern that is stronger than the percent_rural pattern. Will need a log transform.
+plot(y = residuals(lm5), x=na.omit(healthsubset)$percent_uninsured) #Minor Funnelling, could use log transform
 
 healthsubset$log_percent_uninsured = log(healthsubset$percent_uninsured)
 
-lm6 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + log_average_daily_pm2_5 + log_percent_uninsured + child_mortality_rate, data = na.omit(healthsubset)) 
+lm6 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    log_infant_mortality_rate + log_percent_uninsured + life_expectancy + 
+    average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
 
-plot(y=residuals(lm6), x= na.omit(healthsubset)$log_percent_uninsured) #Equal variance problem solved.
+plot(y=residuals(lm6), x=na.omit(healthsubset)$log_percent_uninsured) #Improved funnelling pattern to reach equal variance
 
-plot(y=residuals(lm6), x= na.omit(healthsubset)$child_mortality_rate) #Needs log transform
+plot(y=residuals(lm6), x=na.omit(healthsubset)$life_expectancy) #Looks like equal variance is acheived
+
+plot(y=residuals(lm6), x=na.omit(healthsubset)$average_daily_pm2_5)#Funnelling pattern
+
+healthsubset$log_average_daily_pm2_5 = log(healthsubset$average_daily_pm2_5) 
+
+lm7 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    log_infant_mortality_rate + log_percent_uninsured + life_expectancy + 
+    log_average_daily_pm2_5 + child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
+
+plot(y=residuals(lm7), x=na.omit(healthsubset)$log_average_daily_pm2_5) #Improved funnelling pattern to reach near equal variance
+
+plot(y=residuals(lm7), x=na.omit(healthsubset)$child_mortality_rate) #Needs log transformation
+
 
 healthsubset$log_child_mortality_rate = log(healthsubset$child_mortality_rate)
 
-lm7 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + percent_rural + log_average_daily_pm2_5 + log_percent_uninsured + log_child_mortality_rate, data = na.omit(healthsubset)) 
+lm8 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    log_infant_mortality_rate + log_percent_uninsured + life_expectancy + 
+    log_average_daily_pm2_5 + log_child_mortality_rate + percent_food_insecure, 
+    data = na.omit(healthsubset))
 
-plot(y=residuals(lm7), x= na.omit(healthsubset)$log_child_mortality_rate) #Equal variance issue solved
+plot(y=residuals(lm8), x=na.omit(healthsubset)$log_child_mortality_rate) #Fixed funnelling and achieved equal variance
 
-shapiro.test(residuals(lm7))
+plot(y=residuals(lm8), x=na.omit(healthsubset)$percent_food_insecure) #Funnelling pattern
 
-summary(lm7)
+healthsubset$log_percent_food_insecure = log(healthsubset$percent_food_insecure) 
 
-```
+lm9 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    log_infant_mortality_rate + log_percent_uninsured + life_expectancy + 
+    log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure, 
+    data = na.omit(healthsubset))
 
-Unfortunately this did not solve our normality issue.
+plot(y=residuals(lm9), x=na.omit(healthsubset)$log_percent_food_insecure) #Fixed funnelling and achieved equal variance
 
-```{r}
-ggpairs(data = na.omit(healthsubset), columns = c("log_percent_low_birthweight", "log_median_household_income", "log_percent_food_insecure", "percent_rural", "log_average_daily_pm2_5", "log_percent_uninsured", "log_child_mortality_rate"))
-
-##Percent rural might be better log transformed
-healthsubset$log_percent_rural = log(healthsubset$percent_rural + 1) #add +1 for locations with 0 values
-
-lm8 = lm(formula = logcasechange ~ log_percent_low_birthweight + log_median_household_income + log_percent_food_insecure + log_percent_rural + log_average_daily_pm2_5 + log_percent_uninsured + log_child_mortality_rate, data = na.omit(healthsubset)) 
-
-plot(y=residuals(lm8), x= na.omit(healthsubset)$log_percent_rural) #Fairly equal variance
-
-shapiro.test(residuals(lm8)) #Normality still not solved.
-
-
-plot(y=residuals(lm8), x= fitted(lm8))
-```
-
-The transformations didn't change our residual vs fit plot or our normality issues. We will implement run some interaction terms through variable selection to see if they normalize our model.
-
-
-### Add Variables We Previously had back into the model.
-
-## Step 14: Test Potential Interaction Effects
-
-```{r}
-library(MASS)
-lm8interactions = stepAIC(lm8, scope=list(upper= ~log_percent_low_birthweight*log_median_household_income*log_percent_food_insecure*log_percent_rural*log_average_daily_pm2_5*log_percent_uninsured*log_child_mortality_rate, lower= ~1))
-
-shapiro.test(residuals(lm8interactions))
-
-
-ggpairs(data = na.omit(healthsubset), columns = c("log_percent_low_birthweight", "log_median_household_income", "log_percent_food_insecure", "log_percent_rural", "log_average_daily_pm2_5", "log_percent_uninsured", "log_child_mortality_rate"))
-
-#interaction terms
-
-#majority rural and other factors
-mod1.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
-
-mod1.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor+log_percent_low_birthweight*majorityruralfactor + percent_smokers*majorityruralfactor +log_primary_care_physicians_rate*majorityruralfactor +average_daily_pm2_5*majorityruralfactor +life_expectancy*majorityruralfactor +log_infant_mortality_rate*majorityruralfactor +log_median_household_income*majorityruralfactor + log_percent_65_and_over*majorityruralfactor)
-
-step(mod1.lower_cases, scope = list(lower = mod1.lower_cases, upper = mod1.upper_cases))
-
-# median HH income and other factors
-mod2.lower_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
-
-mod2.upper_cases = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor+log_percent_low_birthweight*log_median_household_income + percent_smokers*log_median_household_income +log_primary_care_physicians_rate*log_median_household_income +average_daily_pm2_5*log_median_household_income +life_expectancy*log_median_household_income +log_infant_mortality_rate*log_median_household_income + log_percent_65_and_over*log_median_household_income)
-
-step(mod2.lower_cases, scope = list(lower = mod2.lower_cases, upper = mod2.upper_cases))
-
-```
-
-
-
-
-
-```{r}
-
-#normality issue
-#remove potential outliers (no time to use influential point methods)
-
-
-plot(lm8, which = 2)
-plot(residuals(lm8), fitted(lm8))
-
-cov19_project_nm_nooutliers = na.omit(cov19_project_nm)
-cov19_project_nm_nooutliers$lm8resids = na.omit(residuals(lm8))
-
-outliers = boxplot(cov19_project_nm_nooutliers$lm8resids, plot=FALSE)$out
-
-lm8resids = append(outliers, 5:925, after = length(outliers) - 1)
-
-outliermarker = rep(1,length(cov19_project_nm_nooutliers))
-outliermat = as.data.frame(cbind(lm8resids, outliermarker))
-
-cov19_project_nm_nooutliers = merge(x = cov19_project_nm_nooutliers, y = outliermat, by = "lm8resids", all.x = TRUE)
-
-cov19_project_nm_nooutliers<- cov19_project_nm_nooutliers[-which(cov19_project_nm_nooutliers$outliermarker == 1),]
-
-
-lm9 = lm(data = cov19_project_nm_nooutliers, logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor)
-
-plot(lm9, which = 2)
-
-shapiro.test(residuals(lm9))
+plot(lm9,which = 2)
 hist(residuals(lm9))
+plot(residuals(lm9), fitted(lm9))
+shapiro.test(residuals(lm9))
 
 ```
+We see that we satisfy equal variance and linearity conditions, but we have not acheived normality. We will check for if any variables previously excluded should now be included.
+
+
+## Step 14: Perform variable selection test again but for all newly transformed variables
 
 ```{r}
-library(usmap)
-ggplot(data = cov19_project_nm, aes(log_percent_65_and_over, logcasesmonth, col = factor(state)))+
-  geom_point()+
-  labs(title = "Scatterplot Log(% over 65) vs. Log(Cases Month)",
-  x = "Log(% over 65)",
-  y= "Log(Cases Month)")
 
-states = cov19_project_nm$STATE
+lm9.upper_cases = lm(data = na.omit(healthsubset),logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_infant_mortality_rate + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + log_percent_uninsured + percent_smokers + primary_care_physicians_rate + percent_65_and_over)
+step(lm9, scope = list(lower = lm9, upper = lm9.upper_cases))
 
-
-plot_usmap(regions = c("states"), data = cov19_project_nm,
-           values = "casesmonth", color = "light gray", labels = FALSE,
-           label_color = "black") + scale_fill_continuous(low = "pink", high = "red", na.value = " gray", name ="", label = scales::comma) +
-  theme(legend.key.width = unit(2, "line"), legend.key.height = unit(3, "line"), legend.position = "right", legend.title = element_text(size=16))
-
-help(plot_usmap)
 ```
 
+Now we should include percent_smokers.
 
 ```{r}
-#prediction interval for counties with 65+
-fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
-    log_primary_care_physicians_rate + average_daily_pm2_5 + 
-    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
-    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
-    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
-    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
-    data = na.omit(cov19_project_nm))
-summary(fit1)
-summary(fit2)
 
-#looks like relatively equal variance on the right side
-x10 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$majorityruralfactor
-plot(x = x10, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
-title(xlab = "log(Med HH Income)*majority rural", line = 2, cex.lab = .7)
-title(ylab = "log(cases month)", line=2, cex.lab = .7)
-title(main = "log(Med HH Income)*majority rural vs. log(cases month)",line = 0.5, cex.lab = .5 )
+lm10 = lm(formula = logcasechange ~ percent_rural + loghouseholds + 
+    logmedincome + log_percent_low_birthweight + percent_vaccinated + 
+    log_infant_mortality_rate + log_percent_uninsured + life_expectancy + 
+    log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + 
+    percent_smokers, data = na.omit(healthsubset))
 
+plot(y = residuals(lm10), x = na.omit(healthsubset)$percent_smokers) #It appears there is equal variance with a few outliers.
 
-x11 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$log_percent_low_birthweight
-plot(x = x11, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
-title(xlab = "log(Med HH Income)*log(% low birth weight)", line = 2, cex.lab = .7)
-title(ylab = "log(cases month)", line=2, cex.lab = .7)
-title(main = "log(Med HH Income)*log(% low birth weight) vs. log(cases month)",line = 0.5, cex.lab = .5 )
-
-
-x12 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$percent_smokers
-plot(x = x12, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
-title(xlab = "log(Med HH Income)*percent smokers", line = 2, cex.lab = .7)
-title(ylab = "log(cases month)", line=2, cex.lab = .7)
-title(main = "log(Med HH Income)*percent_smokers vs. log(cases month)",line = 0.5, cex.lab = .5 )
-
-x13 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$life_expectancy
-plot(x = x13, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "")
-title(xlab = "log(Med HH Income)*life_expectancy", line = 2, cex.lab = .7)
-title(ylab = "log(cases month)", line=2, cex.lab = .7)
-title(main = "log(Med HH Income)*life_expectancy vs. log(cases month)",line = 0.5, cex.lab = .5 )
+shapiro.test(residuals(lm10)) #Still have not solved the normality problems
 
 ```
 
+Now we will test interaction terms with variable selection.
+
+
+#Step 15: Use step function with interaction terms with log median income.
+
+
+```{r, echo=FALSE}
+
+library(MASS)
+
+help(stepAIC)
+lm10interactions = stepAIC(lm10, scope=list(upper= logcasechange ~ percent_rural + loghouseholds + logmedincome + log_percent_low_birthweight + percent_vaccinated + log_infant_mortality_rate + log_percent_uninsured + life_expectancy + log_average_daily_pm2_5 + log_child_mortality_rate + log_percent_food_insecure + percent_smokers + loghouseholds:percent_rural + loghouseholds:logmedincome + loghouseholds:log_percent_low_birthweight + loghouseholds:percent_vaccinated + loghouseholds:log_infant_mortality_rate + loghouseholds:log_percent_uninsured + loghouseholds:life_expectancy + loghouseholds:log_average_daily_pm2_5 + loghouseholds:log_child_mortality_rate + loghouseholds:log_percent_food_insecure + loghouseholds:percent_smokers, lower= ~1))
+
+```
+
+
+## Step 16: Check normality with new terms considered.
+```{r}
+
+summary(lm10interactions)
+shapiro.test(residuals(lm10interactions))
+plot(lm10interactions, which = 2)
+hist(residuals(lm10interactions))
+
+```
+We still did not achieve normality, so we must remove outliers.
+## Step 17: Remove outliers
 
 ```{r}
-#mobility
-cov19_project$logcasesmonth = cov19_project_nm$logcasesmonth
-cov19_project$log_percent_low_birthweight = log(cov19_project$percent_low_birthweight)
-cov19_project$log_primary_care_physicians_rate = log(cov19_project$primary_care_physicians_rate)
-cov19_project$log_infant_mortality_rate = log(cov19_project$infant_mortality_rate)
-cov19_project$log_median_household_income = log(cov19_project$median_household_income)
-cov19_project$log_percent_65_and_over = log(cov19_project$percent_65_and_over)
-cov19_project$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0)
 
 
-lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor)
-
-fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
-    log_primary_care_physicians_rate + average_daily_pm2_5 + 
-    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
-    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
-    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
-    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
-    data = na.omit(cov19_project_nm))
-
-fit2_alt = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
-    log_primary_care_physicians_rate + average_daily_pm2_5 + 
-    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
-    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
-    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
-    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income, 
-    data = na.omit(cov19_project))
-
-fit2mobility = lm(data = na.omit(cov19_project), logcasesmonth ~ log_percent_low_birthweight + percent_smokers + 
-    log_primary_care_physicians_rate + average_daily_pm2_5 + 
-    life_expectancy + log_infant_mortality_rate + log_median_household_income + 
-    log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over + 
-    log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income + 
-    percent_smokers:log_median_household_income + life_expectancy:log_median_household_income + retail_recreation + grocery_pharmacy +parks + transit_stations + workplaces + residential)
-
-shapiro.test(residuals(fit2))
-shapiro.test(residuals(fit2mobility))
-
-plot(fit2, which = 2)
-hist(residuals(fit2), main = "Histogram of Model Residuals", xlab = "Standardized Residuals")
-
-anova(fit2_alt, fit2mobility)
-summary(lm8)
-summary(fit2)
-summary(fit2mobility)
-library(stargazer)
-help(stargazer)
-table = stargazer(lm8, fit2, fit2mobility, title = "Results", align = TRUE, type ="html")
 
 ```
+
+
+## Step 18: General F-test for mobility variables
 
 ```{r}
-plot(y=residuals(fit2), x= x10) #fixes unequal variance
 
-p.i. = predict(fit2, interval = 'confidence', level = .95)
-confint(fit2, "log_percent_65_and_over",level = .95)
-summary(fit2)
 
-mean(cov19_project$deathmonth)
+
 ```
+
+## Step 19: Output tables
+
+```{r}
+
+
+
+```
+
+
+#Ctrl + Shift + C to uncomment code below.
+
+
+
+<!-- ```{r} -->
+
+<!-- #normality issue -->
+<!-- #remove potential outliers (no time to use influential point methods) -->
+
+
+<!-- plot(lm8, which = 2) -->
+<!-- plot(residuals(lm8), fitted(lm8)) -->
+
+<!-- cov19_project_nm_nooutliers = na.omit(cov19_project_nm) -->
+<!-- cov19_project_nm_nooutliers$lm8resids = na.omit(residuals(lm8)) -->
+
+<!-- outliers = boxplot(cov19_project_nm_nooutliers$lm8resids, plot=FALSE)$out -->
+
+<!-- lm8resids = append(outliers, 5:925, after = length(outliers) - 1) -->
+
+<!-- outliermarker = rep(1,length(cov19_project_nm_nooutliers)) -->
+<!-- outliermat = as.data.frame(cbind(lm8resids, outliermarker)) -->
+
+<!-- cov19_project_nm_nooutliers = merge(x = cov19_project_nm_nooutliers, y = outliermat, by = "lm8resids", all.x = TRUE) -->
+
+<!-- cov19_project_nm_nooutliers<- cov19_project_nm_nooutliers[-which(cov19_project_nm_nooutliers$outliermarker == 1),] -->
+
+
+<!-- lm9 = lm(data = cov19_project_nm_nooutliers, logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate +average_daily_pm2_5 +life_expectancy +log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over +majorityruralfactor) -->
+
+<!-- plot(lm9, which = 2) -->
+
+<!-- shapiro.test(residuals(lm9)) -->
+<!-- hist(residuals(lm9)) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- library(usmap) -->
+<!-- ggplot(data = cov19_project_nm, aes(log_percent_65_and_over, logcasesmonth, col = factor(state)))+ -->
+<!--   geom_point()+ -->
+<!--   labs(title = "Scatterplot Log(% over 65) vs. Log(Cases Month)", -->
+<!--   x = "Log(% over 65)", -->
+<!--   y= "Log(Cases Month)") -->
+
+<!-- states = cov19_project_nm$STATE -->
+
+
+<!-- plot_usmap(regions = c("states"), data = cov19_project_nm, -->
+<!--            values = "casesmonth", color = "light gray", labels = FALSE, -->
+<!--            label_color = "black") + scale_fill_continuous(low = "pink", high = "red", na.value = " gray", name ="", label = scales::comma) + -->
+<!--   theme(legend.key.width = unit(2, "line"), legend.key.height = unit(3, "line"), legend.position = "right", legend.title = element_text(size=16)) -->
+
+<!-- help(plot_usmap) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- #prediction interval for counties with 65+ -->
+<!-- fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers +  -->
+<!--     log_primary_care_physicians_rate + average_daily_pm2_5 +  -->
+<!--     life_expectancy + log_infant_mortality_rate + log_median_household_income +  -->
+<!--     log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over +  -->
+<!--     log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income +  -->
+<!--     percent_smokers:log_median_household_income + life_expectancy:log_median_household_income,  -->
+<!--     data = na.omit(cov19_project_nm)) -->
+<!-- summary(fit1) -->
+<!-- summary(fit2) -->
+
+<!-- #looks like relatively equal variance on the right side -->
+<!-- x10 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$majorityruralfactor -->
+<!-- plot(x = x10, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "") -->
+<!-- title(xlab = "log(Med HH Income)*majority rural", line = 2, cex.lab = .7) -->
+<!-- title(ylab = "log(cases month)", line=2, cex.lab = .7) -->
+<!-- title(main = "log(Med HH Income)*majority rural vs. log(cases month)",line = 0.5, cex.lab = .5 ) -->
+
+
+<!-- x11 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$log_percent_low_birthweight -->
+<!-- plot(x = x11, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "") -->
+<!-- title(xlab = "log(Med HH Income)*log(% low birth weight)", line = 2, cex.lab = .7) -->
+<!-- title(ylab = "log(cases month)", line=2, cex.lab = .7) -->
+<!-- title(main = "log(Med HH Income)*log(% low birth weight) vs. log(cases month)",line = 0.5, cex.lab = .5 ) -->
+
+
+<!-- x12 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$percent_smokers -->
+<!-- plot(x = x12, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "") -->
+<!-- title(xlab = "log(Med HH Income)*percent smokers", line = 2, cex.lab = .7) -->
+<!-- title(ylab = "log(cases month)", line=2, cex.lab = .7) -->
+<!-- title(main = "log(Med HH Income)*percent_smokers vs. log(cases month)",line = 0.5, cex.lab = .5 ) -->
+
+<!-- x13 = na.omit(cov19_project_nm)$log_median_household_income*na.omit(cov19_project_nm)$life_expectancy -->
+<!-- plot(x = x13, y= na.omit(cov19_project_nm)$logcasesmonth,cex.axis = .6, xlab = "", ylab = "") -->
+<!-- title(xlab = "log(Med HH Income)*life_expectancy", line = 2, cex.lab = .7) -->
+<!-- title(ylab = "log(cases month)", line=2, cex.lab = .7) -->
+<!-- title(main = "log(Med HH Income)*life_expectancy vs. log(cases month)",line = 0.5, cex.lab = .5 ) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- #mobility -->
+<!-- cov19_project$logcasesmonth = cov19_project_nm$logcasesmonth -->
+<!-- cov19_project$log_percent_low_birthweight = log(cov19_project$percent_low_birthweight) -->
+<!-- cov19_project$log_primary_care_physicians_rate = log(cov19_project$primary_care_physicians_rate) -->
+<!-- cov19_project$log_infant_mortality_rate = log(cov19_project$infant_mortality_rate) -->
+<!-- cov19_project$log_median_household_income = log(cov19_project$median_household_income) -->
+<!-- cov19_project$log_percent_65_and_over = log(cov19_project$percent_65_and_over) -->
+<!-- cov19_project$majorityruralfactor = ifelse(cov19_project_nm$percent_rural > .5, 1, 0) -->
+
+
+<!-- lm8 = lm(data = na.omit(cov19_project_nm), logcasesmonth ~  log_percent_low_birthweight + percent_smokers +log_primary_care_physicians_rate + average_daily_pm2_5 + life_expectancy + log_infant_mortality_rate +log_median_household_income + log_percent_65_and_over + majorityruralfactor) -->
+
+<!-- fit2 = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers +  -->
+<!--     log_primary_care_physicians_rate + average_daily_pm2_5 +  -->
+<!--     life_expectancy + log_infant_mortality_rate + log_median_household_income +  -->
+<!--     log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over +  -->
+<!--     log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income +  -->
+<!--     percent_smokers:log_median_household_income + life_expectancy:log_median_household_income,  -->
+<!--     data = na.omit(cov19_project_nm)) -->
+
+<!-- fit2_alt = lm(logcasesmonth ~ log_percent_low_birthweight + percent_smokers +  -->
+<!--     log_primary_care_physicians_rate + average_daily_pm2_5 +  -->
+<!--     life_expectancy + log_infant_mortality_rate + log_median_household_income +  -->
+<!--     log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over +  -->
+<!--     log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income +  -->
+<!--     percent_smokers:log_median_household_income + life_expectancy:log_median_household_income,  -->
+<!--     data = na.omit(cov19_project)) -->
+
+<!-- fit2mobility = lm(data = na.omit(cov19_project), logcasesmonth ~ log_percent_low_birthweight + percent_smokers +  -->
+<!--     log_primary_care_physicians_rate + average_daily_pm2_5 +  -->
+<!--     life_expectancy + log_infant_mortality_rate + log_median_household_income +  -->
+<!--     log_percent_65_and_over + majorityruralfactor + log_median_household_income:log_percent_65_and_over +  -->
+<!--     log_median_household_income:majorityruralfactor + log_percent_low_birthweight:log_median_household_income +  -->
+<!--     percent_smokers:log_median_household_income + life_expectancy:log_median_household_income + retail_recreation + grocery_pharmacy +parks + transit_stations + workplaces + residential) -->
+
+<!-- shapiro.test(residuals(fit2)) -->
+<!-- shapiro.test(residuals(fit2mobility)) -->
+
+<!-- plot(fit2, which = 2) -->
+<!-- hist(residuals(fit2), main = "Histogram of Model Residuals", xlab = "Standardized Residuals") -->
+
+<!-- anova(fit2_alt, fit2mobility) -->
+<!-- summary(lm8) -->
+<!-- summary(fit2) -->
+<!-- summary(fit2mobility) -->
+<!-- library(stargazer) -->
+<!-- help(stargazer) -->
+<!-- table = stargazer(lm8, fit2, fit2mobility, title = "Results", align = TRUE, type ="html") -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- plot(y=residuals(fit2), x= x10) #fixes unequal variance -->
+
+<!-- p.i. = predict(fit2, interval = 'confidence', level = .95) -->
+<!-- confint(fit2, "log_percent_65_and_over",level = .95) -->
+<!-- summary(fit2) -->
+
+<!-- mean(cov19_project$deathmonth) -->
+<!-- ``` -->
 
