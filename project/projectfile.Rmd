@@ -436,9 +436,7 @@ healthsubset.new = na.omit(healthsubset)[!highLeverage,]
 
 lm10interactions.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
     log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
-    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
-    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, data = healthsubset.new)
+    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + logmedincome:log_child_mortality_rate + percent_rural:logmedincome + logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, data = healthsubset.new)
 lm10interactions.lower = lm(logcasechange ~ 1, data = healthsubset.new)
 
 shapiro.test(residuals(lm10interactions.new))
@@ -449,9 +447,29 @@ which(highLeverage == TRUE)
 which(outliers == TRUE)
 
 ```
+
+## Step 18: AIC with Influential Points Removed
+
+```{r}
+
+retestlower = lm(logcasechange ~ 1, data = na.omit(healthsubset.new))
+
+step(retestlower, scope = list(lower = retestlower, upper = lm10interactions.new))
+
+```
+We see that percent rural was what previously controlling for some of the effect of the influential points. Now percent rural is not selected because the influential points have been removed.
+
 ## Step 18: Add New Variables and Remove Influential Points from all dataset.
 
 ```{r}
+
+finalhealthmodel = lm(formula = logcasechange ~ loghouseholds + log_percent_low_birthweight + 
+    log_percent_food_insecure + log_percent_uninsured + life_expectancy + 
+    logmedincome + percent_vaccinated + log_child_mortality_rate + 
+    log_percent_food_insecure:logmedincome + logmedincome:log_child_mortality_rate + 
+    life_expectancy:logmedincome, data = na.omit(healthsubset.new))
+
+plot(residuals(finalhealthmodel), fitted(finalhealthmodel)) #satisfies equal variance and linearity assumption
 
 alldata$logcasechange = log(alldata$case_change + 1.5)
 alldata$loghouseholds = log(alldata$num_households)
@@ -464,17 +482,17 @@ alldata$log_percent_food_insecure = log(alldata$percent_food_insecure)
 
 head(alldata)
 
-basemobilitymodel = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
-    log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
-    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
-    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, na.omit(alldata))
+basemobilitymodel = lm(formula = logcasechange ~ loghouseholds + log_percent_low_birthweight + 
+    log_percent_food_insecure + log_percent_uninsured + life_expectancy + 
+    logmedincome + percent_vaccinated + log_child_mortality_rate + 
+    log_percent_food_insecure:logmedincome + logmedincome:log_child_mortality_rate + 
+    life_expectancy:logmedincome, na.omit(alldata))
 
-mobilitymodel = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
-    log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
-    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
-    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, na.omit(alldata))
+mobilitymodel = lm(formula = logcasechange ~ loghouseholds + log_percent_low_birthweight + 
+    log_percent_food_insecure + log_percent_uninsured + life_expectancy + 
+    logmedincome + percent_vaccinated + log_child_mortality_rate + 
+    log_percent_food_insecure:logmedincome + logmedincome:log_child_mortality_rate + 
+    life_expectancy:logmedincome + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, na.omit(alldata))
 
 
 cooks = cooks.distance(basemobilitymodel)
@@ -488,26 +506,28 @@ highLeverage
 
 alldata.new = na.omit(alldata)[!highLeverage,]
 
-basemobilitymodel.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
-    log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
-    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
-    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure, data = alldata.new)
+basemobilitymodel.new = lm(formula = logcasechange ~ loghouseholds + log_percent_low_birthweight + 
+    log_percent_food_insecure + log_percent_uninsured + life_expectancy + 
+    logmedincome + percent_vaccinated + log_child_mortality_rate + 
+    log_percent_food_insecure:logmedincome + logmedincome:log_child_mortality_rate + 
+    life_expectancy:logmedincome, data = alldata.new)
 
-mobilitymodel.new = lm(logcasechange ~ percent_rural + loghouseholds + logmedincome + 
-    log_percent_low_birthweight + percent_vaccinated + log_percent_uninsured + 
-    life_expectancy + log_child_mortality_rate + log_percent_food_insecure + 
-    logmedincome:log_child_mortality_rate + percent_rural:logmedincome + 
-    logmedincome:life_expectancy + logmedincome:log_percent_food_insecure + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, data = alldata.new)
+mobilitymodel.new = lm(formula = logcasechange ~ loghouseholds + log_percent_low_birthweight + 
+    log_percent_food_insecure + log_percent_uninsured + life_expectancy + 
+    logmedincome + percent_vaccinated + log_child_mortality_rate + 
+    log_percent_food_insecure:logmedincome + logmedincome:log_child_mortality_rate + 
+    life_expectancy:logmedincome + workplaces_pctpoint_change + retail_and_rec_pctpoint_change + grocery_and_pharmacy_pctpoint_change + parks_pctpoint_change + transit_stations_pctpoint_change + residential_pctpoint_change, data = alldata.new)
 
 shapiro.test(residuals(basemobilitymodel.new))
-summary(basemobilitymodel.new)
 summary(basemobilitymodel)
+summary(basemobilitymodel.new) #R-Squared still goes up
+
 
 which(highLeverage == TRUE)
 which(outliers == TRUE)
 
 ```
+
 
 ## Step 19: General F-test for mobility variables
 
@@ -517,7 +537,7 @@ which(outliers == TRUE)
 summary(basemobilitymodel.new)
 summary(mobilitymodel.new)
 anova(basemobilitymodel.new, mobilitymodel.new)
-
+    
 
 ```
 
@@ -527,12 +547,27 @@ We see that w/ 95% confidence, we know that at least one mobility variable is si
 
 ```{r}
 
+library(stargazer)
+help(stargazer)
+
+#Health Model Building
+table = stargazer(lm10, lm10interactions, lm10interactions.new, finalhealthmodel, title = "Health Models", align = TRUE, type ="html")
+
+#Mobility Analysis
+
+table = stargazer(basemobilitymodel, mobilitymodel, basemobilitymodel.new, mobilitymodel.new, title = "Mobility Results", align = TRUE, type ="html")
+
+#Final Models
+
+
+table = stargazer(finalhealthmodel, mobilitymodel.new, title = "Final Results", align = TRUE, type ="html")
+
 
 
 ```
 
 
-### OLD CODE: 
+# **** OLD CODE ****: 
 
 
 
