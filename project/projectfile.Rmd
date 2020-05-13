@@ -41,8 +41,8 @@ global_mobility = read.csv(file = "csvs/Global_Mobility_Report.csv")
 #global_mobility = read.csv(url("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=a88b56a24e1a1e25"))
 
 #***REMOVE ONCE NEW DATA IS WORKING***
-data_mobility_old = read.csv(file = "csvs/us-mobility.csv")
-data_mobility_old$county = stringr::str_remove(data_mobility$region, " County")
+#data_mobility_old = read.csv(file = "csvs/us-mobility.csv")
+#data_mobility_old$county = stringr::str_remove(data_mobility$region, " County")
 #***REMOVE ONCE NEW DATA IS WORKING***
 
 ```
@@ -174,7 +174,7 @@ healthsubset = subset(allmerged,select=c("fips","state","case_change","percent_l
 #based on the output here, we will probably need to log transform casesmonth
 ggpairs(healthsubset, columns = c(3, 4:9))
 ggpairs(healthsubset, columns = c(3, 10:14))
-ggpairs(healthsubset, columns = c(3, 14:18))
+ggpairs(healthsubset, columns = c(3, 15:18))
 #head(cov19_project_nm)
 ```
 
@@ -216,6 +216,10 @@ lambda.opt
 
 healthsubset$logcasechange = log(healthsubset$tempcases) #usingtemp cases to remove places that reduced cases
 
+#rechecking the scatterplot matrix after log transforming y
+ggpairs(healthsubset, columns = c(20, 4:9))
+ggpairs(healthsubset, columns = c(20, 10:14))
+ggpairs(healthsubset, columns = c(20, 15:18))
 ```
 
 From the box-cox method, we can see that a log transformation is most appropriate.
@@ -446,7 +450,9 @@ summary(lm10interactions.new)
 summary(lm10interactions)
 
 which(highLeverage == TRUE)
-which(outliers == TRUE)
+
+hist(residuals(lm10interactions.new)) #Looks relatively normal
+plot(lm10interactions.new, which = 2)
 
 ```
 ## Step 18: Add New Variables and Remove Influential Points from all dataset.
@@ -505,7 +511,7 @@ summary(basemobilitymodel.new)
 summary(basemobilitymodel)
 
 which(highLeverage == TRUE)
-which(outliers == TRUE)
+
 
 ```
 
